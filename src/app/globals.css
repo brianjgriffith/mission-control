@@ -47,26 +47,26 @@
   --radius-4xl: calc(var(--radius) + 16px);
 }
 
-/* Obsidian-inspired dark theme - this is the default and only theme */
+/* Obsidian-inspired dark theme — high contrast variant */
 :root {
   --radius: 0.5rem;
   --background: #1e1e2e;
-  --foreground: #cdd6f4;
-  --card: #252538;
-  --card-foreground: #cdd6f4;
+  --foreground: #e2e8f8;
+  --card: #2c2c45;
+  --card-foreground: #e2e8f8;
   --popover: #1e1e2e;
-  --popover-foreground: #cdd6f4;
+  --popover-foreground: #e2e8f8;
   --primary: #b4befe;
   --primary-foreground: #1e1e2e;
-  --secondary: #313244;
-  --secondary-foreground: #cdd6f4;
-  --muted: #313244;
-  --muted-foreground: #6c7086;
-  --accent: #313244;
-  --accent-foreground: #cdd6f4;
+  --secondary: #353550;
+  --secondary-foreground: #e2e8f8;
+  --muted: #353550;
+  --muted-foreground: #9da5c0;
+  --accent: #353550;
+  --accent-foreground: #e2e8f8;
   --destructive: #f38ba8;
-  --border: #3b3b54;
-  --input: #3b3b54;
+  --border: #45455e;
+  --input: #45455e;
   --ring: #b4befe;
   --chart-1: #89b4fa;
   --chart-2: #a6e3a1;
@@ -74,12 +74,12 @@
   --chart-4: #cba6f7;
   --chart-5: #fab387;
   --sidebar: #181825;
-  --sidebar-foreground: #cdd6f4;
+  --sidebar-foreground: #e2e8f8;
   --sidebar-primary: #b4befe;
   --sidebar-primary-foreground: #1e1e2e;
-  --sidebar-accent: #252538;
-  --sidebar-accent-foreground: #cdd6f4;
-  --sidebar-border: #2a2a3c;
+  --sidebar-accent: #2c2c45;
+  --sidebar-accent-foreground: #e2e8f8;
+  --sidebar-border: #353550;
   --sidebar-ring: #b4befe;
 }
 
@@ -90,6 +90,12 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Card elevation — subtle border + shadow for depth */
+[class*="bg-card"] {
+  border: 1px solid var(--border);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Scrollbar styling */

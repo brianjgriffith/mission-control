@@ -1,265 +1,395 @@
 "use client";
 
-import { useMemo } from "react";
-import { useStore } from "@/lib/store";
-import { PRIORITY_CONFIG, type Card } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import {
-  Map as MapIcon,
+  CheckCircle2,
+  Circle,
+  ArrowRight,
+  Database,
+  ShoppingCart,
+  Users,
+  GitBranch,
+  BarChart3,
+  Clock,
   AlertTriangle,
-  Calendar,
-  ChevronRight,
+  Plug,
 } from "lucide-react";
-import {
-  startOfWeek,
-  endOfWeek,
-  addWeeks,
-  format,
-  parseISO,
-  isWithinInterval,
-  isBefore,
-  startOfDay,
-} from "date-fns";
+
+type TaskStatus = "done" | "in_progress" | "not_started";
+
+interface PhaseTask {
+  label: string;
+  status: TaskStatus;
+}
+
+interface Phase {
+  id: number;
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  status: "complete" | "active" | "upcoming";
+  outcome: string;
+  tasks: PhaseTask[];
+  dependencies?: string;
+}
+
+const phases: Phase[] = [
+  {
+    id: 0,
+    title: "Foundation",
+    subtitle: "Cloud infrastructure & auth",
+    icon: <Database className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      "Executive team can log in and see existing dashboard views with current data, hosted in the cloud.",
+    tasks: [
+      { label: "Design Supabase schema", status: "not_started" },
+      { label: "Set up Supabase project with RLS policies", status: "not_started" },
+      { label: "Implement Supabase Auth (invite-only)", status: "not_started" },
+      {
+        label: "Role-based access control (admin, executive, manager, sales rep, program manager, custom viewer)",
+        status: "not_started",
+      },
+      { label: "Sales Rep role — scoped to own meetings + sales, write access for outcome tagging", status: "not_started" },
+      { label: "Program-scoped roles — program managers see only their program data", status: "not_started" },
+      { label: "Additive permission model — easy to add new roles without rework", status: "not_started" },
+      { label: "Deploy to Vercel", status: "not_started" },
+      { label: "Migrate existing data to Supabase", status: "not_started" },
+      { label: "Environment variable setup (HubSpot API key, Supabase creds)", status: "not_started" },
+    ],
+  },
+  {
+    id: 1,
+    title: "Purchase & Sales Sync",
+    subtitle: "Replace manual sales entry",
+    icon: <ShoppingCart className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      "Sales tab shows real revenue data without manual entry, every sale is attributable to a rep, and lead quality is tracked from meeting to close.",
+    dependencies: "Phase 0",
+    tasks: [
+      { label: "HubSpot charge sync — webhook + daily schedule", status: "not_started" },
+      { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status", status: "not_started" },
+      { label: "Kajabi sync — evaluate API, direct sync if richer than HubSpot charges", status: "not_started" },
+      { label: "Contact sync from HubSpot", status: "not_started" },
+      { label: "Historical charge backfill (all-time)", status: "not_started" },
+      { label: "Sales attribution — auto from SamCart affiliates", status: "not_started" },
+      { label: "Sales attribution — manual UI for non-affiliate purchases", status: "not_started" },
+      { label: "Meeting sync from HubSpot Meetings API", status: "not_started" },
+      { label: "Meeting outcome tagging (No Show, Rescheduled, Not Qualified, Lead, Sold)", status: "not_started" },
+      { label: "Lead quality metrics — no-show rate, qualification rate, close rate per rep + funnel", status: "not_started" },
+      { label: "Sales rep login with scoped access", status: "not_started" },
+      { label: "Sync status indicator + last synced timestamp", status: "not_started" },
+    ],
+  },
+  {
+    id: 2,
+    title: "Student & Enrollment Sync",
+    subtitle: "Automate student tracking with student vs. partner classification",
+    icon: <Users className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      "Student roster stays current without manual enrollment tracking, with accurate student vs. partner counts and automated classification.",
+    dependencies: "Phase 1",
+    tasks: [
+      { label: "Auto-classification: charge detected → student, partner form → partner, neither → flag for review", status: "not_started" },
+      { label: "Partner auto-linking — connect partner to their student from form data", status: "not_started" },
+      { label: "Unclassified queue — contacts needing manual review", status: "not_started" },
+      { label: "Accurate counts — actual students vs. total members (students + partners)", status: "not_started" },
+      { label: "Partner list viewable per student", status: "not_started" },
+      { label: "Subscription status sync (active, cancelled, paused)", status: "not_started" },
+      { label: "Churn event auto-logging", status: "not_started" },
+      { label: "Daily student reconciliation + flag unclassified members", status: "not_started" },
+      { label: "Manual fields: coach assignment, notes, attendance", status: "not_started" },
+      { label: "Future: Accelerator Hub auto-provisioning when Hub is ready", status: "not_started" },
+    ],
+  },
+  {
+    id: 3,
+    title: "Funnel & Journey Tracking",
+    subtitle: "Full customer journey visibility with auto-discovery",
+    icon: <GitBranch className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      'The executive team can answer "Which funnels actually drive revenue, how fast, and how often do those customers come back?"',
+    dependencies: "Phases 1 + 2",
+    tasks: [
+      { label: "HubSpot segment naming convention (LM: / QZ: / WC: / FN:)", status: "not_started" },
+      { label: "Historical segment import — one-time classification of existing segments", status: "not_started" },
+      { label: "Funnel auto-discovery workflow (daily n8n scan)", status: "not_started" },
+      { label: "Journey events schema + data model", status: "not_started" },
+      { label: "Form submission listener (HubSpot webhook)", status: "not_started" },
+      { label: "Historical journey backfill", status: "not_started" },
+      { label: "Funnel performance dashboard", status: "not_started" },
+      { label: "Contact journey timeline view", status: "not_started" },
+      { label: "Speed to purchase + cohort analysis", status: "not_started" },
+      { label: "First vs. repeat buyer breakdown", status: "not_started" },
+      { label: "Attribution Sankey diagram — funnel → product flow", status: "not_started" },
+      { label: "Daily metrics aggregation", status: "not_started" },
+    ],
+  },
+  {
+    id: 4,
+    title: "Advanced Analytics & Reporting",
+    subtitle: "AI-powered insights, alerts, and daily digest",
+    icon: <BarChart3 className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      "Leadership gets a daily Slack briefing, intelligent alerts, and proactive insights — the dashboard tells you what to pay attention to before you ask.",
+    dependencies: "Phase 3",
+    tasks: [
+      { label: "Daily executive Slack digest (Claude scheduled task — trend-aware, not template-based)", status: "not_started" },
+      { label: "Weekly executive report email (Claude task — narrative with week-over-week analysis)", status: "not_started" },
+      { label: "Churn risk scoring (Claude task — contextual reasoning, not just a number)", status: "not_started" },
+      { label: "Intelligent alerts (Claude task — judges severity, provides context + suggested actions)", status: "not_started" },
+      { label: "LTV prediction from purchase history + engagement patterns", status: "not_started" },
+      { label: "Revenue forecasting (MRR trends, seasonality)", status: "not_started" },
+      { label: "CSV/PDF export for any view", status: "not_started" },
+    ],
+  },
+  {
+    id: 5,
+    title: "External Integrations & AI-Assisted Sales",
+    subtitle: "Zoom transcripts, call intelligence, social analytics",
+    icon: <Plug className="h-5 w-5" />,
+    status: "upcoming",
+    outcome:
+      "Sales calls are automatically evaluated and follow-up copy generated. Content performance ties directly to revenue attribution.",
+    dependencies: "Phase 4",
+    tasks: [
+      { label: "Zoom transcript auto-capture (n8n webhook → store in Supabase)", status: "not_started" },
+      { label: "Sales call AI evaluation (Claude task — score against sales GPS rubric)", status: "not_started" },
+      { label: "AI-generated follow-up email drafts (Claude task)", status: "not_started" },
+      { label: "YouTube analytics integration", status: "not_started" },
+      { label: "Instagram / Meta analytics integration", status: "not_started" },
+      { label: "Meta Ads / Google Ads spend + ROAS tracking", status: "not_started" },
+      { label: "Content & Ads dashboard view", status: "not_started" },
+    ],
+  },
+];
+
+function StatusIcon({ status }: { status: TaskStatus }) {
+  if (status === "done") {
+    return <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />;
+  }
+  if (status === "in_progress") {
+    return <Clock className="h-3.5 w-3.5 shrink-0 text-amber-400 animate-pulse" />;
+  }
+  return <Circle className="h-3.5 w-3.5 shrink-0 text-muted-foreground/70" />;
+}
+
+function PhaseStatusBadge({ status }: { status: Phase["status"] }) {
+  if (status === "complete") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-400">
+        <CheckCircle2 className="h-3 w-3" /> Complete
+      </span>
+    );
+  }
+  if (status === "active") {
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-400">
+        <Clock className="h-3 w-3" /> In Progress
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-muted/30 px-2 py-0.5 text-[10px] font-semibold text-muted-foreground/70">
+      Upcoming
+    </span>
+  );
+}
 
 export function RoadmapView() {
-  const cards = useStore((s) => s.cards);
-  const projects = useStore((s) => s.projects);
-  const setSelectedCardId = useStore((s) => s.setSelectedCardId);
-  const setActiveView = useStore((s) => s.setActiveView);
-
-  const today = startOfDay(new Date());
-
-  // Build 6 weeks: current + 5 ahead
-  const weeks = useMemo(() => {
-    return Array.from({ length: 6 }, (_, i) => {
-      const weekStart = startOfWeek(addWeeks(today, i), { weekStartsOn: 1 });
-      const weekEnd = endOfWeek(addWeeks(today, i), { weekStartsOn: 1 });
-      return {
-        start: weekStart,
-        end: weekEnd,
-        label:
-          i === 0
-            ? "This Week"
-            : i === 1
-              ? "Next Week"
-              : format(weekStart, "MMM d"),
-        sublabel: `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`,
-      };
-    });
-  }, [today]);
-
-  // Project lookup
-  const projectMap: Record<string, { name: string; color: string }> = {};
-  for (const p of projects) {
-    projectMap[p.id] = { name: p.name, color: p.color };
-  }
-
-  // Active (non-archived, non-done) cards
-  const activeCards = cards.filter(
-    (c) => !c.archived && c.column_id !== "done"
+  const totalTasks = phases.reduce((sum, p) => sum + p.tasks.length, 0);
+  const completedTasks = phases.reduce(
+    (sum, p) => sum + p.tasks.filter((t) => t.status === "done").length,
+    0
   );
-
-  // Overdue: has due_date in the past, not done
-  const overdue = activeCards.filter(
-    (c) => c.due_date && isBefore(parseISO(c.due_date), today)
+  const inProgressTasks = phases.reduce(
+    (sum, p) => sum + p.tasks.filter((t) => t.status === "in_progress").length,
+    0
   );
-
-  // Cards bucketed by week
-  const weekCards = weeks.map((week) =>
-    activeCards.filter(
-      (c) =>
-        c.due_date &&
-        isWithinInterval(parseISO(c.due_date), {
-          start: week.start,
-          end: week.end,
-        })
-    )
-  );
-
-  // Unscheduled: active, not done, no due_date
-  const unscheduled = activeCards.filter((c) => !c.due_date);
-
-  // Group unscheduled by project
-  const unscheduledByProject = new Map<string, Card[]>();
-  for (const c of unscheduled) {
-    const key = c.project_id || "__none__";
-    if (!unscheduledByProject.has(key)) unscheduledByProject.set(key, []);
-    unscheduledByProject.get(key)!.push(c);
-  }
-
-  const renderCard = (card: Card, compact = false) => {
-    const pri = PRIORITY_CONFIG[card.priority];
-    const proj = card.project_id ? projectMap[card.project_id] : null;
-    return (
-      <button
-        key={card.id}
-        onClick={() => setSelectedCardId(card.id)}
-        className={cn(
-          "flex w-full items-center gap-2 rounded-md border-l-2 bg-card/40 text-left transition-colors hover:bg-card/60",
-          pri.borderColor,
-          compact ? "px-2 py-1.5" : "px-2.5 py-2"
-        )}
-      >
-        <div className="min-w-0 flex-1">
-          <p className={cn("truncate font-medium", compact ? "text-[11px]" : "text-xs")}>
-            {card.title}
-          </p>
-          <div className="mt-0.5 flex items-center gap-1.5">
-            <span className={cn("font-mono text-[9px] uppercase", pri.color)}>
-              {card.priority}
-            </span>
-            {proj && (
-              <span className="text-[9px]" style={{ color: proj.color }}>
-                {proj.name}
-              </span>
-            )}
-            {card.due_date && (
-              <span className="text-[9px] text-muted-foreground/50">
-                {format(parseISO(card.due_date), "MMM d")}
-              </span>
-            )}
-          </div>
-        </div>
-        <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground/30" />
-      </button>
-    );
-  };
 
   return (
-    <div className="flex h-full overflow-hidden">
-      {/* Timeline */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-5xl px-6 py-6">
-          {/* Header */}
-          <div className="mb-6 flex items-end justify-between">
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight">Roadmap</h1>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {format(today, "MMMM yyyy")} - 6 week view
-              </p>
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto max-w-4xl px-6 py-6">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Mission Control v2 Roadmap
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            From local SQLite to automated cloud-hosted executive platform
+          </p>
+
+          {/* Progress summary */}
+          <div className="mt-4 flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{completedTasks}</span> done
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-amber-400" />
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{inProgressTasks}</span> in progress
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Circle className="h-4 w-4 text-muted-foreground/70" />
+              <span className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">
+                  {totalTasks - completedTasks - inProgressTasks}
+                </span>{" "}
+                remaining
+              </span>
             </div>
           </div>
 
-          {/* Overdue Section */}
-          {overdue.length > 0 && (
-            <div className="mb-6">
-              <div className="mb-2 flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4 text-destructive" />
-                <span className="text-xs font-semibold text-destructive">
-                  Overdue
-                </span>
-                <span className="font-mono text-[10px] text-destructive/60">
-                  {overdue.length}
-                </span>
-              </div>
-              <div className="grid grid-cols-2 gap-1.5 rounded-lg border border-destructive/20 bg-destructive/5 p-3">
-                {overdue.map((card) => renderCard(card, true))}
-              </div>
-            </div>
-          )}
+          {/* Overall progress bar */}
+          <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-muted/30">
+            <div
+              className="h-full rounded-full bg-emerald-500 transition-all"
+              style={{ width: `${totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0}%` }}
+            />
+          </div>
+        </div>
 
-          {/* Weekly Timeline */}
-          <div className="space-y-4">
-            {weeks.map((week, i) => (
-              <div key={i}>
-                <div className="mb-2 flex items-center gap-3">
-                  <Calendar className="h-4 w-4 text-muted-foreground/50" />
-                  <span
-                    className={cn(
-                      "text-xs font-semibold",
-                      i === 0 ? "text-primary" : "text-foreground/70"
-                    )}
-                  >
-                    {week.label}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground/40">
-                    {week.sublabel}
-                  </span>
-                  <span className="font-mono text-[10px] text-muted-foreground/40">
-                    {weekCards[i].length}
-                  </span>
-                </div>
-                {weekCards[i].length > 0 ? (
-                  <div className="grid grid-cols-2 gap-1.5 pl-7">
-                    {weekCards[i]
-                      .sort((a, b) => {
-                        const po = { p1: 0, p2: 1, p3: 2, p4: 3 };
-                        return po[a.priority] - po[b.priority];
-                      })
-                      .map((card) => renderCard(card))}
-                  </div>
-                ) : (
-                  <div className="ml-7 rounded-md border border-dashed border-border/30 py-3 text-center">
-                    <span className="text-[10px] text-muted-foreground/30">
-                      No tasks scheduled
-                    </span>
+        {/* Phase cards */}
+        <div className="space-y-4">
+          {phases.map((phase, i) => {
+            const phaseDone = phase.tasks.filter((t) => t.status === "done").length;
+            const phaseTotal = phase.tasks.length;
+            const phaseProgress = phaseTotal > 0 ? (phaseDone / phaseTotal) * 100 : 0;
+
+            return (
+              <div key={phase.id}>
+                {/* Connector arrow */}
+                {i > 0 && (
+                  <div className="flex justify-center py-1">
+                    <ArrowRight className="h-4 w-4 rotate-90 text-muted-foreground/30" />
                   </div>
                 )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
 
-      {/* Unscheduled Sidebar */}
-      <div className="w-[260px] shrink-0 overflow-y-auto border-l border-border bg-card/20 px-3 py-6">
-        <div className="mb-4 flex items-center gap-2">
-          <MapIcon className="h-4 w-4 text-muted-foreground/50" />
-          <span className="text-xs font-semibold">Unscheduled</span>
-          <span className="font-mono text-[10px] text-muted-foreground">
-            {unscheduled.length}
-          </span>
-        </div>
-        <p className="mb-4 text-[10px] text-muted-foreground/40">
-          Set a due date on these tasks to place them on the timeline.
-        </p>
-
-        {unscheduled.length > 0 ? (
-          <div className="space-y-4">
-            {Array.from(unscheduledByProject.entries()).map(
-              ([projectId, projectCards]) => {
-                const proj =
-                  projectId !== "__none__" ? projectMap[projectId] : null;
-                return (
-                  <div key={projectId}>
-                    <div className="mb-1.5 flex items-center gap-1.5">
-                      {proj ? (
-                        <>
-                          <div
-                            className="h-2 w-2 rounded-full"
-                            style={{ backgroundColor: proj.color }}
-                          />
-                          <span className="text-[10px] font-medium">
-                            {proj.name}
+                <div
+                  className={cn(
+                    "rounded-xl border p-5 transition-colors",
+                    phase.status === "active"
+                      ? "border-amber-500/30 bg-amber-500/[0.03]"
+                      : phase.status === "complete"
+                        ? "border-emerald-500/20 bg-emerald-500/[0.02]"
+                        : "border-border/40 bg-card/30"
+                  )}
+                >
+                  {/* Phase header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className={cn(
+                          "mt-0.5 rounded-lg p-2",
+                          phase.status === "active"
+                            ? "bg-amber-500/10 text-amber-400"
+                            : phase.status === "complete"
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-muted/20 text-muted-foreground/60"
+                        )}
+                      >
+                        {phase.icon}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                            Phase {phase.id}
                           </span>
-                        </>
-                      ) : (
-                        <span className="text-[10px] text-muted-foreground">
-                          No Project
-                        </span>
-                      )}
+                          <PhaseStatusBadge status={phase.status} />
+                        </div>
+                        <h2 className="mt-0.5 text-base font-semibold">{phase.title}</h2>
+                        <p className="text-xs text-muted-foreground">{phase.subtitle}</p>
+                      </div>
                     </div>
-                    <div className="space-y-1">
-                      {projectCards.map((card) => renderCard(card, true))}
+
+                    {/* Phase progress */}
+                    <div className="text-right">
+                      <span className="text-xs text-muted-foreground">
+                        {phaseDone}/{phaseTotal}
+                      </span>
+                      <div className="mt-1 h-1 w-20 overflow-hidden rounded-full bg-muted/30">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all"
+                          style={{ width: `${phaseProgress}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
-                );
-              }
-            )}
-          </div>
-        ) : (
-          <div className="rounded-lg border border-dashed border-border/30 py-6 text-center">
-            <span className="text-[10px] text-muted-foreground/30">
-              All tasks are scheduled
+
+                  {/* Dependencies */}
+                  {phase.dependencies && (
+                    <div className="ml-12 mt-1">
+                      <span className="text-[10px] text-muted-foreground/60">
+                        Depends on: {phase.dependencies}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Task list */}
+                  <div className="ml-12 mt-4 space-y-1.5">
+                    {phase.tasks.map((task, j) => (
+                      <div key={j} className="flex items-start gap-2">
+                        <StatusIcon status={task.status} />
+                        <span
+                          className={cn(
+                            "text-xs leading-tight",
+                            task.status === "done"
+                              ? "text-muted-foreground/70 line-through"
+                              : task.status === "in_progress"
+                                ? "text-foreground"
+                                : "text-muted-foreground"
+                          )}
+                        >
+                          {task.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Outcome */}
+                  <div className="ml-12 mt-4 rounded-md bg-muted/15 px-3 py-2">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Outcome
+                    </span>
+                    <p className="mt-0.5 text-xs text-foreground/70">
+                      {phase.outcome}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Deprecated features note */}
+        <div className="mt-8 rounded-xl border border-border/30 bg-card/20 p-5">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-muted-foreground/60" />
+            <span className="text-xs font-semibold text-muted-foreground">
+              Not Migrating to v2
             </span>
-            <button
-              onClick={() => setActiveView("kanban")}
-              className="mt-2 block w-full text-[10px] text-primary hover:underline"
-            >
-              Go to Kanban
-            </button>
           </div>
-        )}
+          <div className="mt-3 space-y-1.5 ml-6">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Marketing — Jake Berman funnel machine (personal tool, may rebuild with GHL integration later)
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">
+                Projects tracker (may be recreated later)
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
