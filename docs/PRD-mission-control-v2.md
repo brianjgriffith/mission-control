@@ -369,11 +369,11 @@ Phase 4: Advanced (depends on Phase 3)
 
 ## Open Questions
 
-1. **HubSpot Custom Properties** — What custom properties exist today on contacts and deals? We need to map these before building the sync. An audit of the HubSpot schema would be valuable.
-2. **SamCart Data Gap** — Does HubSpot capture payment plan type, partial refunds, and subscription status changes from SamCart? If not, we may need a direct SamCart integration for Phase 2.
-3. **Historical Data Depth** — How far back should we backfill? All-time, or just last 12 months?
-4. **Funnel Inventory** — Need a complete list of all active funnels, lead magnets, quizzes, and web class registration forms with their HubSpot form IDs.
-5. **Coach Assignment** — Is coach assignment tracked in HubSpot or only internally? If only internal, we keep manual assignment in Mission Control.
+1. **HubSpot Custom Properties** — ✅ ANSWERED: There is a custom property on contacts called "charges." For the few purchases that happen directly in HubSpot, the built-in payment properties are used. A full audit of the HubSpot schema is still recommended before building the sync.
+2. **SamCart Data Gap** — ⏳ PARTIALLY ANSWERED: HubSpot does not capture SamCart data extremely well. Brian will provide specifics on what's included vs. missing. A direct SamCart integration may be needed for Phase 2.
+3. **Historical Data Depth** — ✅ ANSWERED: All-time. Pull all available data from HubSpot, including data from older purchase services that fed into HubSpot.
+4. **Funnel Inventory** — ⏳ PENDING: Brian will provide the complete list of active funnels, lead magnets, quizzes, and web class registration forms with their HubSpot form IDs.
+5. **Coach Assignment** — ✅ ANSWERED: Coach assignments are tracked in Notion, not HubSpot. A separate Accelerator Hub app is being built for coaches to use with clients, which may serve as the future source for coach assignment data. For now, keep manual assignment in Mission Control.
 6. **Web Class Attendance** — How is webinar attendance currently tracked? GoToWebinar? Zoom? Does it sync to HubSpot?
 7. **Access Scope** — Should executives see all data, or are there views that should be restricted by role?
 8. **Existing Priority Bugs** — Should the Phase 1 bugs documented in SALES_PRIORITIES.md and STUDENT-PRIORITIES.md be fixed before or during the migration to Supabase? (Recommendation: fix during migration since we're rewriting the data layer anyway.)
