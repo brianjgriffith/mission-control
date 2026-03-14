@@ -374,9 +374,9 @@ Phase 4: Advanced (depends on Phase 3)
 3. **Historical Data Depth** — ✅ ANSWERED: All-time. Pull all available data from HubSpot, including data from older purchase services that fed into HubSpot.
 4. **Funnel Inventory** — ⏳ PENDING: Brian will provide the complete list of active funnels, lead magnets, quizzes, and web class registration forms with their HubSpot form IDs.
 5. **Coach Assignment** — ✅ ANSWERED: Coach assignments are tracked in Notion, not HubSpot. A separate Accelerator Hub app is being built for coaches to use with clients, which may serve as the future source for coach assignment data. For now, keep manual assignment in Mission Control.
-6. **Web Class Attendance** — How is webinar attendance currently tracked? GoToWebinar? Zoom? Does it sync to HubSpot?
-7. **Access Scope** — Should executives see all data, or are there views that should be restricted by role?
-8. **Existing Priority Bugs** — Should the Phase 1 bugs documented in SALES_PRIORITIES.md and STUDENT-PRIORITIES.md be fixed before or during the migration to Supabase? (Recommendation: fix during migration since we're rewriting the data layer anyway.)
+6. **Web Class Attendance** — ✅ ANSWERED: Web class attendance is not currently tracked. Zoom is used for web classes (not RSVP). Tracking attendance via Zoom API integration could be a future enhancement.
+7. **Access Scope** — ✅ ANSWERED: Executives can see all data. No view-level restrictions needed — full read access for all authenticated users.
+8. **Existing Priority Bugs** — ⏳ PENDING: Brian needs to review the bugs and priorities in SALES_PRIORITIES.md and STUDENT-PRIORITIES.md before deciding on timing relative to the Supabase migration.
 
 ---
 
