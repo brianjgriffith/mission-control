@@ -52,6 +52,8 @@ Not everything in Mission Control v1 belongs in v2. Some features were built for
 | Custom Viewer | Assignable per-view read access | One-off roles needing specific dashboard views |
 | Admin (Brian) | Full access + settings + permissions | System configuration, user management, role assignment |
 
+> **Per-user configuration:** The roles above define default access levels. Admins can configure additional per-user parameters — for example, granting a Sales Rep temporary access to a broader view, or restricting a Custom Viewer to a subset of what their role normally allows. The permission model is additive: roles grant baseline access, and per-user overrides can expand or further restrict that base. This means no role is fully rigid — edge cases can be handled without creating new role types.
+
 ---
 
 ## Architecture Overview
@@ -94,6 +96,7 @@ Lead Magnets / Quizzes / Web Classes --> HubSpot --> n8n --> Supabase --> Next.j
 | Primary Data Source | HubSpot | All purchases from various platforms land in HubSpot as "charges" (custom object). Contacts and segments live here |
 | Auth | Supabase Auth | Email/password for executive team, role-based access |
 | Hosting | Vercel | Already deploying Channel Audits here |
+| Timezone Standard | UTC | All timestamps stored in UTC in Supabase. SamCart delivers timestamps in UTC (already aligned). HubSpot timestamps should be normalized to UTC in n8n before writing to Supabase. Display layer converts to user's local timezone. |
 
 ### HubSpot Charges as Purchase Source
 
@@ -121,6 +124,19 @@ These fields are available in SamCart but do not survive the sync to HubSpot:
 - Structured discount/coupon data (discount info is baked into the product name string)
 
 **This gap is why the direct SamCart→n8n→Supabase sync is needed** (see Target State architecture).
+
+#### Charge Title Parsing: Options
+
+The charge title embeds product name, variant, email, and amount in a single string (e.g., `"February 2026 Think Media Mastermind - Discount - hello@email.com - $1,500.00"`). Parsing this string is fragile — if a product name contains ` - `, the parser breaks, and format drift over time creates silent data corruption. **A decision is needed before building the sync.**
+
+| Option | Approach | Pros | Cons |
+|--------|----------|------|------|
+| **A — Fix the source** | Add structured custom properties to HubSpot charge records (Product Name, Variant, Amount as separate fields), populated by the workflow that creates them | No parsing needed; clean data at source | Requires HubSpot workflow change; doesn't fix historical records |
+| **B — Product mapping table** | Build a `products` reference table in Supabase mapping known title strings/substrings to canonical product records; n8n normalizes at sync time | Handles existing titles; one place to maintain | Requires upfront product catalogue work; new products need manual addition |
+| **C — SamCart-first** | Use SamCart direct sync (structured data) for all SamCart purchases; only parse HubSpot titles for non-SamCart sources (Kajabi, HubSpot direct) | Minimizes parsing exposure; SamCart is the majority source | Still need to parse Kajabi/HubSpot-direct titles |
+| **D — Hybrid (recommended)** | Use SamCart direct data where available (Option C), plus a product mapping table as fallback for HubSpot-only records (Option B) | Covers all purchase paths; structured data for most volume; resilient to format variation | Most implementation work upfront |
+
+**⏳ DECISION PENDING:** Brian to decide on approach before Phase 1 sync build begins. Option D is recommended but requires the product catalogue to be seeded upfront.
 
 Customer identification uses HubSpot **segments** (not lifecycle stages). Segments determine whether a contact is a customer and what products they're associated with.
 
@@ -155,6 +171,7 @@ Currently, sales team attribution is tracked via **SamCart affiliate sales** —
 - [ ] Deploy to Vercel
 - [ ] Migrate existing manual data to Supabase
 - [ ] Environment variable setup (HubSpot API key, Supabase creds)
+- [ ] **Admin: Sync Health Panel** — An admin-only view showing the `sync_log` table: last sync time per workflow, success/error status, records processed, and error messages. Each row has a **Re-trigger** button to manually kick off a re-sync. This makes sync failures visible without requiring database access and gives the admin a way to recover from errors without involving engineering.
 
 **Outcome:** Executive team can log in and see the existing dashboard views with current data, hosted in the cloud.
 
@@ -193,7 +210,8 @@ Currently, sales team attribution is tracked via **SamCart affiliate sales** —
 #### n8n Workflows
 1. **Scheduled Full Sync** (daily) — Pull all contacts with charges updated in last 24h, upsert to Supabase
 2. **Webhook Real-Time Sync** — HubSpot webhook on contact property change (new charge), push to Supabase immediately
-3. **SamCart Direct Sync** — SamCart webhook + daily schedule pulls purchase data directly into Supabase with richer detail (affiliate attribution, payment plan type, refund status, subscription changes). Deduplicates against HubSpot charge IDs to prevent double-counting. The existing SamCart→HubSpot workflow remains untouched for CRM purposes.
+3. **SamCart Direct Sync** — SamCart webhook + daily schedule pulls purchase data directly into Supabase with richer detail (affiliate attribution, payment plan type, refund status, subscription changes). The existing SamCart→HubSpot workflow remains untouched for CRM purposes. **Deduplication strategy:** SamCart and HubSpot records for the same purchase may arrive at different times. Use SamCart's transaction ID as the canonical dedup key. When a record arrives via HubSpot first, it's stored with a `pending_samcart_enrichment` flag. When the SamCart record arrives (webhook or daily sync), it enriches the existing record rather than creating a duplicate. If SamCart arrives first, its record is stored and the HubSpot record merges into it when it arrives. The SamCart transaction ID is stored on both paths to enable matching.
+3a. **SamCart Subscription Event Sync** — Captures SamCart webhook events beyond purchases: dunning failures, payment retries, subscription pauses, and failed renewals. These are written as journey events with type `payment_failed`, `subscription_paused`, etc. and serve as early churn risk signals, surfacing problems before a formal cancellation occurs.
 4. **Historical Backfill** (one-time) — Pull all historical charges to populate past months
 5. **Meeting Sync** — HubSpot Meetings API webhook + daily schedule syncs scheduled meetings to Supabase, associated with the correct sales rep
 
@@ -235,10 +253,27 @@ Contact added to "Active Accelerator" segment
 ```
 
 - **Student:** Has a purchase/charge for an Accelerator product. This is the primary signal.
-- **Partner:** Submitted the partner enrollment form in HubSpot. The form captures who the associated student is, allowing auto-linking.
+- **Partner:** Submitted the partner enrollment form in HubSpot. The form links the partner to their associated student via form questions. Confirmed: the partner form is the only path into the program for partners, so auto-linking is reliable.
 - **Unclassified:** No charge and no partner form — rare edge case. Creates a review task for the team. These often indicate a data issue worth investigating.
 
-This approach means ~95%+ of classifications are fully automated. The partner form is the key — it already exists and captures the relationship data needed.
+This approach means ~95%+ of classifications are fully automated. The partner form is the key — it already exists, captures the relationship data needed, and is the only way partners can be added.
+
+#### Elite Classification Logic
+
+Elite operates differently from Accelerator — there is no partner concept for Elite. When a contact is added to the Active Elite segment:
+
+```
+Contact added to "Active Elite" segment
+  │
+  ├─ Has Elite charge?  ──► YES ──► Student
+  │
+  └─ No charge?  ──► Flag for manual review (data issue)
+```
+
+- **Student:** Has a purchase/charge for an Elite product.
+- **Unclassified:** No Elite charge — flag for manual review. More likely a HubSpot data issue than a legitimate enrollment.
+
+Elite classifications feed into the same `students` table with `program = 'elite'`. The unclassified queue (see Dashboard Changes below) handles both Accelerator and Elite flags in one view.
 
 #### Future Onboarding Automation
 
@@ -281,7 +316,7 @@ This eliminates manual account creation entirely. Mission Control becomes the so
 #### Dashboard Changes
 - Students auto-created when coaching product charges are detected
 - Partners auto-created and linked to their student when partner form is detected
-- **Unclassified queue** — shows contacts added to Active Accelerator with neither a charge nor a partner form, for manual review
+- **Enrollment Data Quality Panel** — A dedicated mini-dashboard (not just a list) for reviewing classification issues across both Accelerator and Elite. Shows unclassified contacts alongside their HubSpot data (segment, charges, form submissions). Each row has one-click actions: **Mark as Student**, **Mark as Partner**, **Link to Student**, **Ignore / Not a Real Enrollment**. Goal: make manual review fast enough that the queue never builds up. Also surfaces contacts where the HubSpot data conflicts with Supabase (daily reconciliation mismatches).
 - Student count displays **actual students** vs. **total members** (students + partners) so the numbers are always accurate
 - Partner list viewable per student — "This student has 1 partner: [name]"
 - Churn events auto-logged from subscription changes
@@ -520,10 +555,24 @@ contacts (
   hubspot_id text UNIQUE NOT NULL,
   email text,
   name text,
-  segment text,                  -- HubSpot segment (used instead of lifecycle stages)
+  -- NOTE: segment membership is a many-to-many relationship.
+  -- A contact can belong to multiple HubSpot segments simultaneously.
+  -- Segments are stored in the contact_segments junction table below, not here.
   first_conversion_date timestamptz,
   created_at timestamptz,
   updated_at timestamptz
+)
+
+-- Contact Segments (junction table — contacts can belong to many segments)
+contact_segments (
+  id uuid PRIMARY KEY,
+  contact_id uuid REFERENCES contacts(id) ON DELETE CASCADE,
+  hubspot_list_id text NOT NULL,         -- HubSpot list/segment ID
+  segment_name text,                     -- Human-readable name (e.g., "Active Accelerator")
+  added_at timestamptz,                  -- When the contact was added to this segment in HubSpot
+  removed_at timestamptz,                -- NULL if still active; set when they leave the segment
+  created_at timestamptz,
+  UNIQUE(contact_id, hubspot_list_id)
 )
 
 -- Journey Events (the core of Phase 3)
@@ -664,8 +713,9 @@ Not all automations are the same. The right tool depends on whether the job is *
 | 3 | Contact Sync | HubSpot webhook + daily schedule | Real-time + daily | 1 |
 | 3a | SamCart Direct Sync | SamCart webhook + daily schedule | Real-time + daily | 1 |
 | 3b | SamCart Affiliate Attribution | Derived from SamCart direct sync | Real-time + daily | 1 |
+| 3b2 | SamCart Subscription Events | SamCart webhook (dunning, retries, pauses, failed renewals) | Real-time | 1 |
 | 3c | Meeting Sync | HubSpot Meetings API webhook + daily schedule | Real-time + daily | 1 |
-| 4 | Enrollment Classification | Contact added to Active Accelerator segment | Real-time | 2 |
+| 4 | Enrollment Classification (Accelerator + Elite) | Contact added to Active Accelerator or Active Elite segment | Real-time | 2 |
 | 4a | Partner Auto-Linking | Partner form detected | Real-time | 2 |
 | 5 | Subscription Status Sync | HubSpot/SamCart webhook | Real-time | 2 |
 | 6 | Daily Student Reconciliation | Cron | Daily | 2 |
@@ -728,10 +778,15 @@ Phase 4: Advanced (depends on Phase 3)
 4. **Funnel Inventory** — ⏳ PENDING: Brian will provide the complete list of active funnels, lead magnets, quizzes, and web class registration forms with their HubSpot form IDs.
 5. **Coach Assignment** — ✅ ANSWERED: Coach assignments are tracked in Notion, not HubSpot. A separate Accelerator Hub app is being built for coaches to use with clients, which may serve as the future source for coach assignment data. For now, keep manual assignment in Mission Control.
 6. **Web Class Attendance** — ✅ ANSWERED: Web class attendance is not currently tracked. Zoom is used for web classes (not RSVP). Tracking attendance via Zoom API integration could be a future enhancement.
-7. **Access Scope** — ✅ ANSWERED: Executives can see all data. No view-level restrictions needed — full read access for all authenticated users.
+7. **Access Scope** — ✅ ANSWERED (clarified): Executives have full read access to all data. Other roles are scoped per the Target Users table — Sales Reps see only their own data, Program Managers see only their program's data, etc. These require row-level RLS in Supabase, not just view-level access. Admins can configure per-user overrides to expand or restrict a user's base role access.
 8. **Existing Priority Bugs** — ⏳ PENDING: Brian needs to review the bugs and priorities in SALES_PRIORITIES.md and STUDENT-PRIORITIES.md before deciding on timing relative to the Supabase migration.
 9. **Kajabi Direct Sync** — ⏳ PENDING: Evaluate whether Kajabi's API provides richer purchase data than what arrives in HubSpot charges (e.g., subscription status, payment plan details, refund events). If so, build a direct Kajabi→n8n→Supabase sync like SamCart. If HubSpot charges capture everything Kajabi offers, the existing Kajabi→HubSpot automation is sufficient.
 10. **Partner Form ID** — ⏳ PENDING: Brian to provide the HubSpot form ID for the Accelerator partner enrollment form, needed for the auto-classification logic in Phase 2.
+11. **Charge Title Parsing Approach** — ⏳ PENDING: See "Charge Title Parsing: Options" section. Brian to decide on Option A, B, C, or D (recommended: D — Hybrid) before Phase 1 sync build begins.
+12. **HubSpot Historical Timeline Depth** — ✅ NOTED: HubSpot retains custom object records (charges), form submissions, and contact data indefinitely for the life of the contact. With ~2 years of HubSpot usage, all contacts and charges created in that window should be available via the API. Key caveat: some engagement data (email opens/clicks) may have rolling retention windows depending on HubSpot plan tier — this affects journey event richness for older contacts but not charge/purchase history. A full API audit is recommended before the historical backfill to confirm what data is actually retrievable.
+13. **Contact Email Dedup Strategy** — ⏳ PENDING: HubSpot can have duplicate contacts with the same email. The `contacts` table uses `hubspot_id` as the primary unique key, which is correct. However, if HubSpot merges two contacts, the sync should handle the merge event (one hubspot_id absorbs the other). Decision needed: does the sync listen for HubSpot contact merge events via webhook, or does the daily reconciliation detect and clean up duplicates?
+14. **Claude Scheduled Tasks — Implementation Plan** — ⏳ PENDING: The daily digest, churn scoring, weekly reports, and alerts are described as "Claude scheduled tasks" but the hosting/triggering mechanism is not yet defined. Before Phase 4, a concrete plan is needed: how tasks are hosted, how failures are detected and retried, and how results (Slack messages, email reports) are delivered reliably. This should be evaluated as part of Phase 3 planning so it doesn't block Phase 4 execution.
+15. **Meeting-to-Rep Matching Logic** — ⏳ PENDING: The meeting sync assigns meetings to a `rep_id`, but the mechanism for matching a HubSpot meeting to the correct sales rep isn't defined. If reps have individual calendar links, the booking source can serve as the key. If a shared/generic link is used, an alternative matching approach is needed. Brian to clarify how meetings are currently booked.
 
 ---
 
@@ -755,4 +810,6 @@ Phase 4: Advanced (depends on Phase 3)
 | Dirty/inconsistent HubSpot data | Data cleaning step in n8n workflows; validation rules in Supabase |
 | Scope creep on journey tracking | Ship Phase 1-2 first, validate value before building Phase 3 |
 | Migration data loss | Run SQLite and Supabase in parallel during transition |
-| n8n downtime | Sync log table surfaces issues; daily reconciliation catches gaps |
+| n8n downtime | Sync log table surfaces issues; daily reconciliation catches gaps. Admin sync health panel in Mission Control surfaces errors with manual re-trigger option (see Phase 0 admin features) |
+| Charge title format drift | Product mapping table (Option B/D) provides a resilient fallback; monitor unknown product strings in sync log |
+| HubSpot timeline gaps for pre-HubSpot history | Charge records and form submissions should be complete for the 2+ year window. Email engagement data may have rolling retention — document known gaps before backfill runs |
