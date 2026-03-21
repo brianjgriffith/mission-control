@@ -23,6 +23,7 @@ import {
   GraduationCap,
   GripVertical,
   Megaphone,
+  Activity,
   LogOut,
 } from "lucide-react";
 import {
@@ -77,6 +78,7 @@ const GLOBAL_NAV: { id: View; label: string; icon: typeof LayoutDashboard; short
 
 const SECONDARY_ITEMS = [
   { id: "archive" as const, label: "Archive", icon: Archive },
+  { id: "sync_health" as const, label: "Sync Health", icon: Activity },
   { id: "settings" as const, label: "Settings", icon: Settings },
 ];
 
@@ -369,13 +371,15 @@ export function Sidebar({
         {SECONDARY_ITEMS.map((item) => {
           const Icon = item.icon;
           const isActive =
-            item.id === "archive" && activeView === "archive" && activeProjectId === null;
+            (item.id === "archive" && activeView === "archive" && activeProjectId === null) ||
+            (item.id === "sync_health" && activeView === "sync_health" && activeProjectId === null);
 
           const button = (
             <button
               key={item.id}
               onClick={() => {
                 if (item.id === "archive") onViewChange("archive");
+                if (item.id === "sync_health") onViewChange("sync_health");
               }}
               className={cn(
                 "flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors",

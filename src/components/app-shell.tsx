@@ -15,6 +15,7 @@ import { CalendarView } from "@/components/views/calendar";
 import { StudentsView } from "@/components/views/students";
 import { MarketingView } from "@/components/views/marketing";
 import { ChargesView } from "@/components/views/charges";
+import { SyncHealthView } from "@/components/views/sync-health";
 import { CommandPalette } from "@/components/command-palette";
 import { QuickAdd } from "@/components/quick-add";
 import { CardDetail } from "@/components/card-detail";
@@ -189,6 +190,8 @@ export function AppShell({ user }: AppShellProps) {
         return <StudentsView />;
       case "marketing":
         return <MarketingView />;
+      case "sync_health":
+        return <SyncHealthView />;
     }
   };
 

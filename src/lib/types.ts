@@ -22,7 +22,8 @@ export type View =
   | 'charges'
   | 'calendar'
   | 'students'
-  | 'marketing';
+  | 'marketing'
+  | 'sync_health';
 
 // ---------------------------------------------------------------------------
 // Project types
