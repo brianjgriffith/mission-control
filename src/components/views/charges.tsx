@@ -13,6 +13,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { UnmatchedManager } from "@/components/unmatched-manager";
+import { ContactDetail } from "@/components/contact-detail";
 import {
   BarChart,
   Bar,
@@ -29,6 +30,7 @@ import {
 // ---------------------------------------------------------------------------
 
 interface ChargeContact {
+  id: string;
   full_name: string;
   email: string;
 }
@@ -204,6 +206,7 @@ export function ChargesView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [unmatchedOpen, setUnmatchedOpen] = useState(false);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Fetch stats (chart data)
@@ -601,8 +604,17 @@ export function ChargesView() {
                         <td className="px-3 py-2.5 text-xs text-muted-foreground whitespace-nowrap">
                           {fmtDate(charge.charge_date)}
                         </td>
-                        <td className="px-3 py-2.5 text-xs font-medium text-foreground">
-                          {charge.contacts?.full_name ?? "—"}
+                        <td className="px-3 py-2.5 text-xs font-medium">
+                          {charge.contacts ? (
+                            <button
+                              onClick={() => setSelectedContactId(charge.contacts!.id)}
+                              className="text-primary hover:text-primary/80 hover:underline text-left"
+                            >
+                              {charge.contacts.full_name}
+                            </button>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 text-xs">
                           {charge.products?.short_name ? (
@@ -682,6 +694,14 @@ export function ChargesView() {
           fetchStats();
         }}
       />
+
+      {/* Contact Detail Slide-over */}
+      {selectedContactId && (
+        <ContactDetail
+          contactId={selectedContactId}
+          onClose={() => setSelectedContactId(null)}
+        />
+      )}
     </div>
   );
 }
