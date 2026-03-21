@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // DELETE /api/financials/sales/[id]
@@ -12,11 +12,15 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT id FROM rep_sales WHERE id = ?")
-      .get(id) as { id: string } | undefined;
+    // Check existence first
+    const { data: existing, error: findError } = await supabase
+      .from("rep_sales")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (findError) throw findError;
 
     if (!existing) {
       return NextResponse.json(
@@ -25,7 +29,11 @@ export async function DELETE(
       );
     }
 
-    db.prepare("DELETE FROM rep_sales WHERE id = ?").run(id);
+    const { error: deleteError } = await supabase
+      .from("rep_sales")
+      .delete()
+      .eq("id", id);
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
   } catch (error) {

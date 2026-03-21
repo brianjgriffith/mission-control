@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { getDb, type EliteAttendanceRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/attendance
@@ -11,22 +10,39 @@ import { getDb, type EliteAttendanceRow } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get("session_id");
     const studentId = searchParams.get("student_id");
 
     // Student mode: return all sessions the student attended
     if (studentId) {
-      const sessions = db
-        .prepare(
-          `SELECT es.id, es.title, es.session_type, es.session_date, ea.attended
-           FROM elite_attendance ea
-           JOIN elite_sessions es ON es.id = ea.session_id
-           WHERE ea.student_id = ? AND ea.attended = 1
-           ORDER BY es.session_date DESC`
-        )
-        .all(studentId) as { id: string; title: string; session_type: string; session_date: string; attended: number }[];
+      const { data, error } = await supabase
+        .from("elite_attendance")
+        .select("attended, elite_sessions(id, title, session_type, session_date)")
+        .eq("student_id", studentId)
+        .eq("attended", true);
+
+      if (error) throw error;
+
+      const sessions = (data ?? []).map((row: Record<string, unknown>) => {
+        const es = row.elite_sessions as {
+          id: string;
+          title: string;
+          session_type: string;
+          session_date: string;
+        };
+        return {
+          id: es.id,
+          title: es.title,
+          session_type: es.session_type,
+          session_date: es.session_date,
+          attended: row.attended,
+        };
+      });
+
+      // Sort by session_date descending
+      sessions.sort((a, b) => b.session_date.localeCompare(a.session_date));
 
       return NextResponse.json({ sessions });
     }
@@ -39,11 +55,13 @@ export async function GET(request: NextRequest) {
     }
 
     // Verify session exists
-    const session = db
-      .prepare("SELECT id FROM elite_sessions WHERE id = ?")
-      .get(sessionId);
+    const { data: session, error: sessionError } = await supabase
+      .from("elite_sessions")
+      .select("id")
+      .eq("id", sessionId)
+      .single();
 
-    if (!session) {
+    if (sessionError || !session) {
       return NextResponse.json(
         { error: "Session not found" },
         { status: 404 }
@@ -51,46 +69,51 @@ export async function GET(request: NextRequest) {
     }
 
     // Get existing attendance records joined with student names
-    const existing = db
-      .prepare(
-        `SELECT ea.*, s.name AS student_name
-         FROM elite_attendance ea
-         JOIN students s ON s.id = ea.student_id
-         WHERE ea.session_id = ?
-         ORDER BY s.name ASC`
-      )
-      .all(sessionId) as (EliteAttendanceRow & { student_name: string })[];
+    const { data: existingData, error: attError } = await supabase
+      .from("elite_attendance")
+      .select("*, students(name)")
+      .eq("session_id", sessionId);
+
+    if (attError) throw attError;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const existing = (existingData ?? []).map((row: any) => {
+      const { students: studentData, ...rest } = row;
+      return {
+        ...rest,
+        student_name: (studentData as { name: string } | null)?.name ?? "",
+      };
+    });
 
     // Get active elite students who do NOT have an attendance record yet
-    const attendedStudentIds = existing.map((r) => r.student_id);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const attendedStudentIds = existing.map((r: any) => r.student_id as string);
 
-    let missing: { id: string; name: string }[] = [];
+    let missingQuery = supabase
+      .from("students")
+      .select("id, name")
+      .eq("program", "elite")
+      .eq("status", "active")
+      .order("name", { ascending: true });
+
     if (attendedStudentIds.length > 0) {
-      const placeholders = attendedStudentIds.map(() => "?").join(", ");
-      missing = db
-        .prepare(
-          `SELECT id, name FROM students
-           WHERE program = 'elite' AND status = 'active'
-           AND id NOT IN (${placeholders})
-           ORDER BY name ASC`
-        )
-        .all(...attendedStudentIds) as { id: string; name: string }[];
-    } else {
-      missing = db
-        .prepare(
-          `SELECT id, name FROM students
-           WHERE program = 'elite' AND status = 'active'
-           ORDER BY name ASC`
-        )
-        .all() as { id: string; name: string }[];
+      // Filter out students who already have attendance records
+      // Use .not().in() to exclude them
+      missingQuery = missingQuery.not(
+        "id",
+        "in",
+        `(${attendedStudentIds.join(",")})`
+      );
     }
 
+    const { data: missing } = await missingQuery;
+
     // Build placeholder records for missing students
-    const missingRecords = missing.map((s) => ({
+    const missingRecords = (missing ?? []).map((s) => ({
       id: null as string | null,
       session_id: sessionId,
       student_id: s.id,
-      attended: 0,
+      attended: false,
       notes: "",
       created_at: "",
       student_name: s.name,
@@ -99,7 +122,9 @@ export async function GET(request: NextRequest) {
     const attendance = [
       ...existing,
       ...missingRecords,
-    ].sort((a, b) => a.student_name.localeCompare(b.student_name));
+    ].sort((a: { student_name: string }, b: { student_name: string }) =>
+      a.student_name.localeCompare(b.student_name)
+    );
 
     return NextResponse.json({ attendance });
   } catch (error) {
@@ -113,7 +138,7 @@ export async function GET(request: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // POST /api/students/attendance
-// Upsert attendance record using INSERT OR REPLACE on UNIQUE(session_id, student_id).
+// Upsert attendance record.
 // ---------------------------------------------------------------------------
 
 interface UpsertAttendanceBody {
@@ -126,7 +151,7 @@ interface UpsertAttendanceBody {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as UpsertAttendanceBody;
-    const db = getDb();
+    const supabase = await createClient();
 
     if (!body.session_id || typeof body.session_id !== "string") {
       return NextResponse.json(
@@ -150,11 +175,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify session exists
-    const session = db
-      .prepare("SELECT id FROM elite_sessions WHERE id = ?")
-      .get(body.session_id);
+    const { data: session, error: sessionError } = await supabase
+      .from("elite_sessions")
+      .select("id")
+      .eq("id", body.session_id)
+      .single();
 
-    if (!session) {
+    if (sessionError || !session) {
       return NextResponse.json(
         { error: "Session not found" },
         { status: 404 }
@@ -162,45 +189,56 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify student exists
-    const student = db
-      .prepare("SELECT id FROM students WHERE id = ?")
-      .get(body.student_id);
+    const { data: student, error: studentError } = await supabase
+      .from("students")
+      .select("id")
+      .eq("id", body.student_id)
+      .single();
 
-    if (!student) {
+    if (studentError || !student) {
       return NextResponse.json(
         { error: "Student not found" },
         { status: 404 }
       );
     }
 
-    const attendedInt = body.attended ? 1 : 0;
+    const attendedBool = !!body.attended;
 
     // Check if a record already exists
-    const existingRecord = db
-      .prepare(
-        "SELECT id FROM elite_attendance WHERE session_id = ? AND student_id = ?"
-      )
-      .get(body.session_id, body.student_id) as { id: string } | undefined;
+    const { data: existingRecord } = await supabase
+      .from("elite_attendance")
+      .select("id")
+      .eq("session_id", body.session_id)
+      .eq("student_id", body.student_id)
+      .single();
 
     if (existingRecord) {
       // Update existing record
-      db.prepare(
-        "UPDATE elite_attendance SET attended = ?, notes = ? WHERE id = ?"
-      ).run(attendedInt, body.notes ?? "", existingRecord.id);
+      await supabase
+        .from("elite_attendance")
+        .update({ attended: attendedBool, notes: body.notes ?? "" })
+        .eq("id", existingRecord.id);
     } else {
       // Insert new record
-      const id = uuidv4();
-      db.prepare(
-        `INSERT INTO elite_attendance (id, session_id, student_id, attended, notes)
-         VALUES (?, ?, ?, ?, ?)`
-      ).run(id, body.session_id, body.student_id, attendedInt, body.notes ?? "");
+      await supabase
+        .from("elite_attendance")
+        .insert({
+          session_id: body.session_id,
+          student_id: body.student_id,
+          attended: attendedBool,
+          notes: body.notes ?? "",
+        });
     }
 
-    const attendance = db
-      .prepare(
-        "SELECT * FROM elite_attendance WHERE session_id = ? AND student_id = ?"
-      )
-      .get(body.session_id, body.student_id) as EliteAttendanceRow;
+    // Fetch the final record
+    const { data: attendance, error: fetchError } = await supabase
+      .from("elite_attendance")
+      .select("*")
+      .eq("session_id", body.session_id)
+      .eq("student_id", body.student_id)
+      .single();
+
+    if (fetchError) throw fetchError;
 
     return NextResponse.json({ attendance }, { status: 201 });
   } catch (error) {

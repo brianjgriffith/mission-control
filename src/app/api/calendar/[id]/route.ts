@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type CalendarEventRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/calendar/[id]
@@ -23,6 +23,7 @@ const ALLOWED_FIELDS = [
   "end_date",
   "event_type",
   "color",
+  "all_day",
   "project_id",
 ] as const;
 
@@ -35,13 +36,16 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchBody;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT * FROM calendar_events WHERE id = ?")
-      .get(id) as CalendarEventRow | undefined;
+    // Check if event exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("calendar_events")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
@@ -70,38 +74,29 @@ export async function PATCH(
       );
     }
 
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
-
+    // Build update object with only provided fields
+    const updates: Record<string, unknown> = {};
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
-        setClauses.push(`${field} = ?`);
-        values.push(body[field as keyof PatchBody] ?? null);
+        updates[field] = body[field as keyof PatchBody] ?? null;
       }
     }
 
-    if ("all_day" in body) {
-      setClauses.push("all_day = ?");
-      values.push(body.all_day ? 1 : 0);
-    }
-
-    if (setClauses.length === 0) {
+    if (Object.keys(updates).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },
         { status: 400 }
       );
     }
 
-    setClauses.push("updated_at = datetime('now')");
-    values.push(id);
+    const { data: event, error: updateError } = await supabase
+      .from("calendar_events")
+      .update(updates)
+      .eq("id", id)
+      .select()
+      .single();
 
-    db.prepare(
-      `UPDATE calendar_events SET ${setClauses.join(", ")} WHERE id = ?`
-    ).run(...values);
-
-    const event = db
-      .prepare("SELECT * FROM calendar_events WHERE id = ?")
-      .get(id) as CalendarEventRow;
+    if (updateError) throw updateError;
 
     return NextResponse.json({ event });
   } catch (error) {
@@ -123,17 +118,26 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT id FROM calendar_events WHERE id = ?")
-      .get(id);
+    // Check if event exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("calendar_events")
+      .select("id")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json({ error: "Event not found" }, { status: 404 });
     }
 
-    db.prepare("DELETE FROM calendar_events WHERE id = ?").run(id);
+    const { error: deleteError } = await supabase
+      .from("calendar_events")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("[DELETE /api/calendar/:id]", error);

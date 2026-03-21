@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
-import crypto from "crypto";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/capacity/coaches
@@ -9,10 +8,14 @@ import crypto from "crypto";
 
 export async function GET() {
   try {
-    const db = getDb();
-    const coaches = db
-      .prepare("SELECT * FROM coach_capacity ORDER BY coach_name ASC")
-      .all();
+    const supabase = await createClient();
+    const { data: coaches, error } = await supabase
+      .from("coach_capacity")
+      .select("*")
+      .order("coach_name", { ascending: true });
+
+    if (error) throw error;
+
     return NextResponse.json({ coaches });
   } catch (error) {
     console.error("[GET /api/students/capacity/coaches]", error);
@@ -31,7 +34,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const body = await request.json();
 
     const {
@@ -49,14 +52,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const id = crypto.randomUUID();
+    const { data, error } = await supabase
+      .from("coach_capacity")
+      .insert({ coach_name, max_students, preferred_max, status, notes })
+      .select("id")
+      .single();
 
-    db.prepare(
-      `INSERT INTO coach_capacity (id, coach_name, max_students, preferred_max, status, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(id, coach_name, max_students, preferred_max, status, notes);
+    if (error) throw error;
 
-    return NextResponse.json({ id }, { status: 201 });
+    return NextResponse.json({ id: data.id }, { status: 201 });
   } catch (error) {
     console.error("[POST /api/students/capacity/coaches]", error);
     return NextResponse.json(
@@ -74,7 +78,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const body = await request.json();
     const { id, max_students, preferred_max, status, notes } = body;
 
@@ -85,39 +89,28 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const fields: string[] = [];
-    const values: (string | number)[] = [];
+    const updateData: Record<string, unknown> = {};
 
-    if (max_students !== undefined) {
-      fields.push("max_students = ?");
-      values.push(max_students);
-    }
-    if (preferred_max !== undefined) {
-      fields.push("preferred_max = ?");
-      values.push(preferred_max);
-    }
-    if (status !== undefined) {
-      fields.push("status = ?");
-      values.push(status);
-    }
-    if (notes !== undefined) {
-      fields.push("notes = ?");
-      values.push(notes);
-    }
+    if (max_students !== undefined) updateData.max_students = max_students;
+    if (preferred_max !== undefined) updateData.preferred_max = preferred_max;
+    if (status !== undefined) updateData.status = status;
+    if (notes !== undefined) updateData.notes = notes;
 
-    if (fields.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No fields to update" },
         { status: 400 }
       );
     }
 
-    fields.push("updated_at = datetime('now')");
-    values.push(id);
+    updateData.updated_at = new Date().toISOString();
 
-    db.prepare(
-      `UPDATE coach_capacity SET ${fields.join(", ")} WHERE id = ?`
-    ).run(...values);
+    const { error } = await supabase
+      .from("coach_capacity")
+      .update(updateData)
+      .eq("id", id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -136,7 +129,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -147,7 +140,12 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    db.prepare("DELETE FROM coach_capacity WHERE id = ?").run(id);
+    const { error } = await supabase
+      .from("coach_capacity")
+      .delete()
+      .eq("id", id);
+
+    if (error) throw error;
 
     return NextResponse.json({ success: true });
   } catch (error) {

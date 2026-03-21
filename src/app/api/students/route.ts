@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { getDb, type StudentRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students
@@ -9,41 +8,35 @@ import { getDb, type StudentRow } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const program = searchParams.get("program");
     const status = searchParams.get("status");
     const coach = searchParams.get("coach");
     const search = searchParams.get("search");
 
-    const filters: string[] = [];
-    const values: unknown[] = [];
+    let query = supabase.from("students").select("*");
 
     if (program) {
-      filters.push("program = ?");
-      values.push(program);
+      query = query.eq("program", program);
     }
     if (status) {
-      filters.push("status = ?");
-      values.push(status);
+      query = query.eq("status", status);
     }
     if (coach) {
-      filters.push("coach = ?");
-      values.push(coach);
+      query = query.eq("coach", coach);
     }
     if (search) {
-      filters.push(
-        "(name LIKE ? OR email LIKE ? OR youtube_channel LIKE ?)"
+      query = query.or(
+        `name.ilike.%${search}%,email.ilike.%${search}%,youtube_channel.ilike.%${search}%`
       );
-      const term = `%${search}%`;
-      values.push(term, term, term);
     }
 
-    const where = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+    query = query.order("name", { ascending: true });
 
-    const students = db
-      .prepare(`SELECT * FROM students ${where} ORDER BY name ASC`)
-      .all(...values) as StudentRow[];
+    const { data: students, error } = await query;
+
+    if (error) throw error;
 
     return NextResponse.json({ students });
   } catch (error) {
@@ -78,7 +71,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateStudentBody;
-    const db = getDb();
+    const supabase = await createClient();
 
     if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
       return NextResponse.json(
@@ -115,27 +108,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const id = uuidv4();
-    db.prepare(
-      `INSERT INTO students (id, name, email, youtube_channel, coach, program, monthly_revenue, signup_date, status, payment_plan, renewal_date, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', ?, ?, ?)`
-    ).run(
-      id,
-      body.name.trim(),
-      body.email ?? "",
-      body.youtube_channel ?? "",
-      body.coach ?? "",
-      body.program,
-      body.monthly_revenue,
-      body.signup_date,
-      body.payment_plan ?? "",
-      body.renewal_date ?? "",
-      body.notes ?? ""
-    );
+    const { data: student, error } = await supabase
+      .from("students")
+      .insert({
+        name: body.name.trim(),
+        email: body.email ?? "",
+        youtube_channel: body.youtube_channel ?? "",
+        coach: body.coach ?? "",
+        program: body.program,
+        monthly_revenue: body.monthly_revenue,
+        signup_date: body.signup_date,
+        status: "active",
+        payment_plan: body.payment_plan ?? "",
+        renewal_date: body.renewal_date ?? "",
+        notes: body.notes ?? "",
+      })
+      .select()
+      .single();
 
-    const student = db
-      .prepare("SELECT * FROM students WHERE id = ?")
-      .get(id) as StudentRow;
+    if (error) throw error;
 
     return NextResponse.json({ student }, { status: 201 });
   } catch (error) {

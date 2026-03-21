@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type StudentRow, type ChurnEventRow, type CoachCapacityRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/export?type=roster|churn|full
@@ -25,21 +25,17 @@ function toCSV(headers: string[], rows: (string | number | null | undefined)[][]
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
 
     if (type === "roster") {
-      const students = db
-        .prepare(
-          `SELECT name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes
-           FROM students
-           ORDER BY name ASC`
-        )
-        .all() as Pick<
-        StudentRow,
-        "name" | "email" | "program" | "coach" | "status" | "monthly_revenue" | "payment_plan" | "signup_date" | "renewal_date" | "youtube_channel" | "switch_requested_to" | "switch_requested_date" | "notes"
-      >[];
+      const { data: students, error } = await supabase
+        .from("students")
+        .select("name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes")
+        .order("name", { ascending: true });
+
+      if (error) throw error;
 
       const headers = [
         "Name",
@@ -57,7 +53,7 @@ export async function GET(request: NextRequest) {
         "Notes",
       ];
 
-      const rows = students.map((s) => [
+      const rows = (students ?? []).map((s) => [
         s.name,
         s.email,
         s.program,
@@ -86,18 +82,21 @@ export async function GET(request: NextRequest) {
     }
 
     if (type === "churn") {
-      const events = db
-        .prepare(
-          `SELECT c.event_type, c.event_date, c.coach, c.reason, c.monthly_revenue_impact, c.notes,
-                  s.name AS student_name
-           FROM churn_events c
-           LEFT JOIN students s ON s.id = c.student_id
-           ORDER BY c.event_date DESC`
-        )
-        .all() as (Pick<
-        ChurnEventRow,
-        "event_type" | "event_date" | "coach" | "reason" | "monthly_revenue_impact" | "notes"
-      > & { student_name: string })[];
+      const { data, error } = await supabase
+        .from("churn_events")
+        .select("event_type, event_date, coach, reason, monthly_revenue_impact, notes, students(name)")
+        .order("event_date", { ascending: false });
+
+      if (error) throw error;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const events = (data ?? []).map((row: any) => {
+        const { students: studentData, ...rest } = row;
+        return {
+          ...rest,
+          student_name: (studentData as { name: string } | null)?.name ?? "",
+        };
+      });
 
       const headers = [
         "Student Name",
@@ -138,69 +137,82 @@ export async function GET(request: NextRequest) {
       const date = new Date().toISOString().slice(0, 10);
 
       // --- Students ---
-      const students = db
-        .prepare(
-          `SELECT name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes
-           FROM students
-           ORDER BY coach ASC, name ASC`
-        )
-        .all() as Pick<
-        StudentRow,
-        "name" | "email" | "program" | "coach" | "status" | "monthly_revenue" | "payment_plan" | "signup_date" | "renewal_date" | "youtube_channel" | "switch_requested_to" | "switch_requested_date" | "notes"
-      >[];
+      const { data: students, error: studentsError } = await supabase
+        .from("students")
+        .select("name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes")
+        .order("coach", { ascending: true })
+        .order("name", { ascending: true });
+
+      if (studentsError) throw studentsError;
 
       // --- Coach capacity ---
-      const coaches = db
-        .prepare("SELECT * FROM coach_capacity ORDER BY coach_name ASC")
-        .all() as CoachCapacityRow[];
+      const { data: coaches, error: coachError } = await supabase
+        .from("coach_capacity")
+        .select("*")
+        .order("coach_name", { ascending: true });
+
+      if (coachError) throw coachError;
 
       // --- Active counts per coach ---
-      const activeCounts = db
-        .prepare(
-          `SELECT coach, COUNT(*) AS cnt FROM students WHERE status = 'active' GROUP BY coach`
-        )
-        .all() as { coach: string; cnt: number }[];
-      const activeMap = new Map(activeCounts.map((r) => [r.coach, r.cnt]));
+      const { data: activeData } = await supabase
+        .from("students")
+        .select("coach")
+        .eq("status", "active");
+
+      const activeMap = new Map<string, number>();
+      for (const row of activeData ?? []) {
+        activeMap.set(row.coach, (activeMap.get(row.coach) ?? 0) + 1);
+      }
 
       // --- Aggregate stats ---
-      const totalActive = activeCounts.reduce((s, r) => s + r.cnt, 0);
-      const totalStudents = students.length;
-      const activeStudents = students.filter((s) => s.status === "active");
+      const allStudents = students ?? [];
+      const totalStudents = allStudents.length;
+      const activeStudents = allStudents.filter((s) => s.status === "active");
+      const totalActive = activeStudents.length;
       const totalMRR = activeStudents.reduce((s, r) => s + (r.monthly_revenue || 0), 0);
-      const totalCapacity = coaches
+      const totalCapacity = (coaches ?? [])
         .filter((c) => c.status !== "inactive")
         .reduce((s, c) => s + c.max_students, 0);
-      const preferredCapacity = coaches
+      const preferredCapacity = (coaches ?? [])
         .filter((c) => c.status !== "inactive")
         .reduce((s, c) => s + c.preferred_max, 0);
       const utilization = totalCapacity > 0 ? Math.round((totalActive / totalCapacity) * 100) : 0;
       const availableSlots = Math.max(totalCapacity - totalActive, 0);
 
       // --- Churn stats (last 30 & 90 days) ---
-      const churn30 = (db
-        .prepare(
-          `SELECT COUNT(*) AS cnt FROM churn_events WHERE event_type IN ('cancel','downgrade','pause') AND event_date >= date('now','-30 days')`
-        )
-        .get() as { cnt: number }).cnt;
-      const churn90 = (db
-        .prepare(
-          `SELECT COUNT(*) AS cnt FROM churn_events WHERE event_type IN ('cancel','downgrade','pause') AND event_date >= date('now','-90 days')`
-        )
-        .get() as { cnt: number }).cnt;
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const ninetyDaysAgo = new Date();
+      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+
+      const { count: churn30 } = await supabase
+        .from("churn_events")
+        .select("*", { count: "exact", head: true })
+        .in("event_type", ["cancel", "downgrade", "pause"])
+        .gte("event_date", thirtyDaysAgo.toISOString().slice(0, 10));
+
+      const { count: churn90 } = await supabase
+        .from("churn_events")
+        .select("*", { count: "exact", head: true })
+        .in("event_type", ["cancel", "downgrade", "pause"])
+        .gte("event_date", ninetyDaysAgo.toISOString().slice(0, 10));
 
       // --- Program breakdown ---
-      const programCounts = db
-        .prepare(
-          `SELECT program, COUNT(*) AS cnt FROM students WHERE status = 'active' GROUP BY program`
-        )
-        .all() as { program: string; cnt: number }[];
+      const programMap = new Map<string, { cnt: number; mrr: number }>();
+      for (const s of activeStudents) {
+        const entry = programMap.get(s.program) ?? { cnt: 0, mrr: 0 };
+        entry.cnt++;
+        entry.mrr += s.monthly_revenue || 0;
+        programMap.set(s.program, entry);
+      }
 
       // --- Payment plan breakdown ---
-      const planCounts = db
-        .prepare(
-          `SELECT payment_plan, COUNT(*) AS cnt FROM students WHERE status = 'active' AND payment_plan != '' GROUP BY payment_plan ORDER BY cnt DESC`
-        )
-        .all() as { payment_plan: string; cnt: number }[];
+      const planMap = new Map<string, number>();
+      for (const s of activeStudents) {
+        if (s.payment_plan) {
+          planMap.set(s.payment_plan, (planMap.get(s.payment_plan) ?? 0) + 1);
+        }
+      }
 
       // Build the CSV with sections separated by blank lines
       const lines: string[] = [];
@@ -215,33 +227,31 @@ export async function GET(request: NextRequest) {
       lines.push(`Preferred Capacity,${preferredCapacity}`);
       lines.push(`Available Slots,${availableSlots}`);
       lines.push(`Utilization,${utilization}%`);
-      lines.push(`Churn (Last 30 Days),${churn30}`);
-      lines.push(`Churn (Last 90 Days),${churn90}`);
+      lines.push(`Churn (Last 30 Days),${churn30 ?? 0}`);
+      lines.push(`Churn (Last 90 Days),${churn90 ?? 0}`);
       lines.push("");
 
       // Section 2: Program Breakdown
       lines.push("PROGRAM BREAKDOWN");
       lines.push("Program,Active Students,MRR");
-      for (const p of programCounts) {
-        const mrr = activeStudents
-          .filter((s) => s.program === p.program)
-          .reduce((s, r) => s + (r.monthly_revenue || 0), 0);
-        lines.push(`${escapeCSV(p.program)},${p.cnt},$${mrr.toFixed(2)}`);
+      for (const [program, data] of programMap) {
+        lines.push(`${escapeCSV(program)},${data.cnt},$${data.mrr.toFixed(2)}`);
       }
       lines.push("");
 
       // Section 3: Payment Plan Breakdown
       lines.push("PAYMENT PLAN BREAKDOWN");
       lines.push("Payment Plan,Active Students");
-      for (const p of planCounts) {
-        lines.push(`${escapeCSV(p.payment_plan || "Not Set")},${p.cnt}`);
+      const sortedPlans = [...planMap.entries()].sort((a, b) => b[1] - a[1]);
+      for (const [plan, cnt] of sortedPlans) {
+        lines.push(`${escapeCSV(plan || "Not Set")},${cnt}`);
       }
       lines.push("");
 
       // Section 4: Coach Capacity
       lines.push("COACH CAPACITY");
       lines.push("Coach,Status,Active Students,Preferred Max,Max Students,Available,Utilization %");
-      for (const c of coaches) {
+      for (const c of coaches ?? []) {
         const active = activeMap.get(c.coach_name) ?? 0;
         const avail = Math.max(c.max_students - active, 0);
         const util = c.max_students > 0 ? Math.round((active / c.max_students) * 100) : 0;
@@ -267,7 +277,7 @@ export async function GET(request: NextRequest) {
         "Switch Requested To", "Switch Requested Date", "Notes",
       ];
       lines.push(rosterHeaders.map(escapeCSV).join(","));
-      for (const s of students) {
+      for (const s of allStudents) {
         lines.push(
           [
             s.name, s.email, s.program, s.coach, s.status, s.monthly_revenue,

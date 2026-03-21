@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type ChurnEventRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/students/churn/[id]
@@ -34,13 +34,15 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchChurnBody;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT * FROM churn_events WHERE id = ?")
-      .get(id) as ChurnEventRow | undefined;
+    const { data: existing, error: fetchError } = await supabase
+      .from("churn_events")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Churn event not found" },
         { status: 404 }
@@ -65,28 +67,28 @@ export async function PATCH(
       );
     }
 
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
+    // Build update payload from allowed fields
+    const updateData: Record<string, unknown> = {};
 
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
-        setClauses.push(`${field} = ?`);
-        values.push(body[field as keyof PatchChurnBody] ?? "");
+        updateData[field] = body[field as keyof PatchChurnBody] ?? "";
       }
     }
 
-    if (setClauses.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },
         { status: 400 }
       );
     }
 
-    values.push(id);
+    const { error: updateError } = await supabase
+      .from("churn_events")
+      .update(updateData)
+      .eq("id", id);
 
-    db.prepare(
-      `UPDATE churn_events SET ${setClauses.join(", ")} WHERE id = ?`
-    ).run(...values);
+    if (updateError) throw updateError;
 
     // If event_type changed, update student status accordingly
     if (body.event_type !== undefined && body.event_type !== existing.event_type) {
@@ -98,22 +100,30 @@ export async function PATCH(
       };
       const newStatus = EVENT_TYPE_TO_STATUS[body.event_type];
       if (newStatus) {
-        db.prepare(
-          "UPDATE students SET status = ?, updated_at = datetime('now') WHERE id = ?"
-        ).run(newStatus, existing.student_id);
+        await supabase
+          .from("students")
+          .update({ status: newStatus, updated_at: new Date().toISOString() })
+          .eq("id", existing.student_id);
       }
     }
 
-    const event = db
-      .prepare(
-        `SELECT c.*, s.name AS student_name
-         FROM churn_events c
-         LEFT JOIN students s ON s.id = c.student_id
-         WHERE c.id = ?`
-      )
-      .get(id) as ChurnEventRow & { student_name: string };
+    // Fetch the updated event with student name
+    const { data: event, error: refetchError } = await supabase
+      .from("churn_events")
+      .select("*, students(name)")
+      .eq("id", id)
+      .single();
 
-    return NextResponse.json({ event });
+    if (refetchError) throw refetchError;
+
+    // Flatten to match response shape
+    const { students: studentData, ...rest } = event as Record<string, unknown>;
+    const result = {
+      ...rest,
+      student_name: (studentData as { name: string } | null)?.name ?? null,
+    };
+
+    return NextResponse.json({ event: result });
   } catch (error) {
     console.error("[PATCH /api/students/churn/:id]", error);
     return NextResponse.json(

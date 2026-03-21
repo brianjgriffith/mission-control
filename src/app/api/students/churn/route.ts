@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type ChurnEventRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/churn
@@ -9,44 +9,44 @@ import { getDb, type ChurnEventRow } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
     const eventType = searchParams.get("event_type");
     const coach = searchParams.get("coach");
     const studentId = searchParams.get("student_id");
 
-    const filters: string[] = [];
-    const values: unknown[] = [];
+    let query = supabase
+      .from("churn_events")
+      .select("*, students(name)");
 
     if (month) {
-      filters.push("c.event_date LIKE ?");
-      values.push(`${month}%`);
+      query = query.like("event_date", `${month}%`);
     }
     if (eventType) {
-      filters.push("c.event_type = ?");
-      values.push(eventType);
+      query = query.eq("event_type", eventType);
     }
     if (coach) {
-      filters.push("c.coach = ?");
-      values.push(coach);
+      query = query.eq("coach", coach);
     }
     if (studentId) {
-      filters.push("c.student_id = ?");
-      values.push(studentId);
+      query = query.eq("student_id", studentId);
     }
 
-    const where = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+    query = query.order("event_date", { ascending: false });
 
-    const events = db
-      .prepare(
-        `SELECT c.*, s.name AS student_name
-         FROM churn_events c
-         LEFT JOIN students s ON s.id = c.student_id
-         ${where}
-         ORDER BY c.event_date DESC`
-      )
-      .all(...values) as (ChurnEventRow & { student_name: string })[];
+    const { data, error } = await query;
+
+    if (error) throw error;
+
+    // Flatten the joined student name to match the original response shape
+    const events = (data ?? []).map((row: Record<string, unknown>) => {
+      const { students: studentData, ...rest } = row;
+      return {
+        ...rest,
+        student_name: (studentData as { name: string } | null)?.name ?? null,
+      };
+    });
 
     return NextResponse.json({ events });
   } catch (error) {
@@ -76,7 +76,7 @@ const EVENT_TYPE_TO_STATUS: Record<string, string> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const db = getDb();
+    const supabase = await createClient();
 
     if (!body.student_id || typeof body.student_id !== "string") {
       return NextResponse.json(
@@ -107,43 +107,44 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify student exists
-    const student = db
-      .prepare("SELECT id FROM students WHERE id = ?")
-      .get(body.student_id);
+    const { data: student, error: studentError } = await supabase
+      .from("students")
+      .select("id")
+      .eq("id", body.student_id)
+      .single();
 
-    if (!student) {
+    if (studentError || !student) {
       return NextResponse.json(
         { error: "Student not found" },
         { status: 404 }
       );
     }
 
-    const id = crypto.randomUUID();
+    // Insert churn event
+    const { data: event, error: insertError } = await supabase
+      .from("churn_events")
+      .insert({
+        student_id: body.student_id,
+        event_type: body.event_type,
+        event_date: body.event_date,
+        reason: body.reason ?? "",
+        monthly_revenue_impact: body.monthly_revenue_impact,
+        coach: body.coach ?? "",
+        notes: body.notes ?? "",
+      })
+      .select()
+      .single();
 
-    db.transaction(() => {
-      db.prepare(
-        `INSERT INTO churn_events (id, student_id, event_type, event_date, reason, monthly_revenue_impact, coach, notes)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
-      ).run(
-        id,
-        body.student_id,
-        body.event_type,
-        body.event_date,
-        body.reason ?? "",
-        body.monthly_revenue_impact,
-        body.coach ?? "",
-        body.notes ?? ""
-      );
+    if (insertError) throw insertError;
 
-      const newStatus = EVENT_TYPE_TO_STATUS[body.event_type];
-      db.prepare(
-        "UPDATE students SET status = ?, updated_at = datetime('now') WHERE id = ?"
-      ).run(newStatus, body.student_id);
-    })();
+    // Update student status
+    const newStatus = EVENT_TYPE_TO_STATUS[body.event_type];
+    const { error: updateError } = await supabase
+      .from("students")
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq("id", body.student_id);
 
-    const event = db
-      .prepare("SELECT * FROM churn_events WHERE id = ?")
-      .get(id) as ChurnEventRow;
+    if (updateError) throw updateError;
 
     return NextResponse.json({ event }, { status: 201 });
   } catch (error) {
@@ -162,7 +163,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 
@@ -173,25 +174,34 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const existing = db
-      .prepare("SELECT * FROM churn_events WHERE id = ?")
-      .get(id) as ChurnEventRow | undefined;
+    const { data: existing, error: fetchError } = await supabase
+      .from("churn_events")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Churn event not found" },
         { status: 404 }
       );
     }
 
-    db.transaction(() => {
-      db.prepare("DELETE FROM churn_events WHERE id = ?").run(id);
+    // Delete the churn event
+    const { error: deleteError } = await supabase
+      .from("churn_events")
+      .delete()
+      .eq("id", id);
 
-      // Revert the student's status to active
-      db.prepare(
-        "UPDATE students SET status = 'active', updated_at = datetime('now') WHERE id = ?"
-      ).run(existing.student_id);
-    })();
+    if (deleteError) throw deleteError;
+
+    // Revert the student's status to active
+    const { error: updateError } = await supabase
+      .from("students")
+      .update({ status: "active", updated_at: new Date().toISOString() })
+      .eq("id", existing.student_id);
+
+    if (updateError) throw updateError;
 
     return NextResponse.json({ success: true });
   } catch (error) {

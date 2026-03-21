@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type StudentRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/students/[id]
@@ -49,13 +49,16 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchStudentBody;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT * FROM students WHERE id = ?")
-      .get(id) as StudentRow | undefined;
+    // Check if student exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("students")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Student not found" },
         { status: 404 }
@@ -101,43 +104,37 @@ export async function PATCH(
       );
     }
 
-    // Check which columns actually exist (defensive against missing migrations)
-    const tableCols = new Set(
-      (db.prepare("PRAGMA table_info(students)").all() as { name: string }[]).map((c) => c.name)
-    );
-
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
+    // Build the update payload from allowed fields
+    const updateData: Record<string, unknown> = {};
 
     for (const field of ALLOWED_FIELDS) {
-      if (field in body && tableCols.has(field)) {
-        setClauses.push(`${field} = ?`);
+      if (field in body) {
         const raw = body[field as keyof PatchStudentBody];
         if (field === "name" && typeof raw === "string") {
-          values.push(raw.trim());
+          updateData[field] = raw.trim();
         } else {
-          values.push(raw ?? "");
+          updateData[field] = raw ?? "";
         }
       }
     }
 
-    if (setClauses.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },
         { status: 400 }
       );
     }
 
-    setClauses.push("updated_at = datetime('now')");
-    values.push(id);
+    updateData.updated_at = new Date().toISOString();
 
-    db.prepare(
-      `UPDATE students SET ${setClauses.join(", ")} WHERE id = ?`
-    ).run(...values);
+    const { data: student, error: updateError } = await supabase
+      .from("students")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
 
-    const student = db
-      .prepare("SELECT * FROM students WHERE id = ?")
-      .get(id) as StudentRow;
+    if (updateError) throw updateError;
 
     return NextResponse.json({ student });
   } catch (error) {
@@ -161,24 +158,30 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT id FROM students WHERE id = ?")
-      .get(id);
+    const { data: existing, error: fetchError } = await supabase
+      .from("students")
+      .select("id")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Student not found" },
         { status: 404 }
       );
     }
 
-    db.transaction(() => {
-      db.prepare("DELETE FROM churn_events WHERE student_id = ?").run(id);
-      db.prepare("DELETE FROM elite_attendance WHERE student_id = ?").run(id);
-      db.prepare("DELETE FROM students WHERE id = ?").run(id);
-    })();
+    // Delete related records first, then the student
+    await supabase.from("churn_events").delete().eq("student_id", id);
+    await supabase.from("elite_attendance").delete().eq("student_id", id);
+    const { error: deleteError } = await supabase
+      .from("students")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
   } catch (error) {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { getDb, type CalendarEventRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/calendar
@@ -13,7 +12,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const start = searchParams.get("start");
     const end = searchParams.get("end");
@@ -33,24 +32,20 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const filters: string[] = [
-      "start_date <= ?",
-      "(end_date >= ? OR (end_date IS NULL AND start_date >= ?))",
-    ];
-    const values: unknown[] = [end, start, start];
+    let query = supabase
+      .from("calendar_events")
+      .select("*")
+      .lte("start_date", end)
+      .or(`end_date.gte.${start},and(end_date.is.null,start_date.gte.${start})`)
+      .order("start_date", { ascending: true });
 
     if (eventType) {
-      filters.push("event_type = ?");
-      values.push(eventType);
+      query = query.eq("event_type", eventType);
     }
 
-    const where = `WHERE ${filters.join(" AND ")}`;
+    const { data: events, error } = await query;
 
-    const events = db
-      .prepare(
-        `SELECT * FROM calendar_events ${where} ORDER BY start_date ASC`
-      )
-      .all(...values) as CalendarEventRow[];
+    if (error) throw error;
 
     return NextResponse.json({ events });
   } catch (error) {
@@ -81,7 +76,7 @@ interface CreateEventBody {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateEventBody;
-    const db = getDb();
+    const supabase = await createClient();
 
     if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
       return NextResponse.json(
@@ -112,25 +107,22 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const id = uuidv4();
-    db.prepare(
-      `INSERT INTO calendar_events (id, title, description, start_date, end_date, event_type, color, all_day, project_id)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id,
-      body.title.trim(),
-      body.description ?? "",
-      body.start_date,
-      body.end_date ?? null,
-      body.event_type ?? "custom",
-      body.color ?? "",
-      body.all_day === false ? 0 : 1,
-      body.project_id ?? null
-    );
+    const { data: event, error } = await supabase
+      .from("calendar_events")
+      .insert({
+        title: body.title.trim(),
+        description: body.description ?? "",
+        start_date: body.start_date,
+        end_date: body.end_date ?? null,
+        event_type: body.event_type ?? "custom",
+        color: body.color ?? "",
+        all_day: body.all_day !== false,
+        project_id: body.project_id ?? null,
+      })
+      .select()
+      .single();
 
-    const event = db
-      .prepare("SELECT * FROM calendar_events WHERE id = ?")
-      .get(id) as CalendarEventRow;
+    if (error) throw error;
 
     return NextResponse.json({ event }, { status: 201 });
   } catch (error) {

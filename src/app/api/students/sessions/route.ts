@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { getDb, type EliteSessionRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/sessions
@@ -10,53 +9,54 @@ import { getDb, type EliteSessionRow } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
     const sessionType = searchParams.get("session_type");
 
-    const filters: string[] = [];
-    const values: unknown[] = [];
+    // Get total active elite students count
+    const { count: eliteCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .eq("program", "elite")
+      .eq("status", "active");
+
+    const eliteCnt = eliteCount ?? 0;
+
+    // Build session query
+    let query = supabase
+      .from("elite_sessions")
+      .select("*");
 
     if (month) {
-      filters.push("es.session_date LIKE ?");
-      values.push(`${month}%`);
+      query = query.like("session_date", `${month}%`);
     }
     if (sessionType) {
-      filters.push("es.session_type = ?");
-      values.push(sessionType);
+      query = query.eq("session_type", sessionType);
     }
 
-    const where = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+    query = query.order("session_date", { ascending: false });
 
-    // Get total active elite students count
-    const eliteCount = db
-      .prepare(
-        "SELECT COUNT(*) AS cnt FROM students WHERE program = 'elite' AND status = 'active'"
-      )
-      .get() as { cnt: number };
+    const { data: sessions, error } = await query;
 
-    const sessions = db
-      .prepare(
-        `SELECT es.*,
-                COALESCE(att.attendance_count, 0) AS attendance_count
-         FROM elite_sessions es
-         LEFT JOIN (
-           SELECT session_id, COUNT(*) AS attendance_count
-           FROM elite_attendance
-           WHERE attended = 1
-           GROUP BY session_id
-         ) att ON att.session_id = es.id
-         ${where}
-         ORDER BY es.session_date DESC`
-      )
-      .all(...values) as (EliteSessionRow & { attendance_count: number })[];
+    if (error) throw error;
 
-    // Attach total_elite_students to each session
-    const result = sessions.map((s) => ({
-      ...s,
-      total_elite_students: eliteCount.cnt,
-    }));
+    // For each session, get attendance count
+    const result = await Promise.all(
+      (sessions ?? []).map(async (s) => {
+        const { count: attendanceCount } = await supabase
+          .from("elite_attendance")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", s.id)
+          .eq("attended", true);
+
+        return {
+          ...s,
+          attendance_count: attendanceCount ?? 0,
+          total_elite_students: eliteCnt,
+        };
+      })
+    );
 
     return NextResponse.json({ sessions: result });
   } catch (error) {
@@ -87,7 +87,7 @@ const VALID_SESSION_TYPES = ["workshop", "mastermind"];
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateSessionBody;
-    const db = getDb();
+    const supabase = await createClient();
 
     if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
       return NextResponse.json(
@@ -113,22 +113,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const id = uuidv4();
-    db.prepare(
-      `INSERT INTO elite_sessions (id, title, session_type, session_date, facilitator, notes)
-       VALUES (?, ?, ?, ?, ?, ?)`
-    ).run(
-      id,
-      body.title.trim(),
-      body.session_type,
-      body.session_date,
-      body.facilitator ?? "",
-      body.notes ?? ""
-    );
+    const { data: session, error } = await supabase
+      .from("elite_sessions")
+      .insert({
+        title: body.title.trim(),
+        session_type: body.session_type,
+        session_date: body.session_date,
+        facilitator: body.facilitator ?? "",
+        notes: body.notes ?? "",
+      })
+      .select()
+      .single();
 
-    const session = db
-      .prepare("SELECT * FROM elite_sessions WHERE id = ?")
-      .get(id) as EliteSessionRow;
+    if (error) throw error;
 
     return NextResponse.json({ session }, { status: 201 });
   } catch (error) {

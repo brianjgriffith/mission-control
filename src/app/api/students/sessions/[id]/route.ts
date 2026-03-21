@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb, type EliteSessionRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/students/sessions/[id]
@@ -32,13 +32,15 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchSessionBody;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT * FROM elite_sessions WHERE id = ?")
-      .get(id) as EliteSessionRow | undefined;
+    const { data: existing, error: fetchError } = await supabase
+      .from("elite_sessions")
+      .select("*")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Session not found" },
         { status: 404 }
@@ -70,38 +72,37 @@ export async function PATCH(
       );
     }
 
-    const setClauses: string[] = [];
-    const values: unknown[] = [];
+    // Build update payload
+    const updateData: Record<string, unknown> = {};
 
     for (const field of ALLOWED_FIELDS) {
       if (field in body) {
-        setClauses.push(`${field} = ?`);
         const raw = body[field as keyof PatchSessionBody];
         if (field === "title" && typeof raw === "string") {
-          values.push(raw.trim());
+          updateData[field] = raw.trim();
         } else {
-          values.push(raw ?? "");
+          updateData[field] = raw ?? "";
         }
       }
     }
 
-    if (setClauses.length === 0) {
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json(
         { error: "No valid fields to update" },
         { status: 400 }
       );
     }
 
-    setClauses.push("updated_at = datetime('now')");
-    values.push(id);
+    updateData.updated_at = new Date().toISOString();
 
-    db.prepare(
-      `UPDATE elite_sessions SET ${setClauses.join(", ")} WHERE id = ?`
-    ).run(...values);
+    const { data: session, error: updateError } = await supabase
+      .from("elite_sessions")
+      .update(updateData)
+      .eq("id", id)
+      .select()
+      .single();
 
-    const session = db
-      .prepare("SELECT * FROM elite_sessions WHERE id = ?")
-      .get(id) as EliteSessionRow;
+    if (updateError) throw updateError;
 
     return NextResponse.json({ session });
   } catch (error) {
@@ -124,23 +125,29 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const db = getDb();
+    const supabase = await createClient();
 
-    const existing = db
-      .prepare("SELECT id FROM elite_sessions WHERE id = ?")
-      .get(id);
+    const { data: existing, error: fetchError } = await supabase
+      .from("elite_sessions")
+      .select("id")
+      .eq("id", id)
+      .single();
 
-    if (!existing) {
+    if (fetchError || !existing) {
       return NextResponse.json(
         { error: "Session not found" },
         { status: 404 }
       );
     }
 
-    db.transaction(() => {
-      db.prepare("DELETE FROM elite_attendance WHERE session_id = ?").run(id);
-      db.prepare("DELETE FROM elite_sessions WHERE id = ?").run(id);
-    })();
+    // Delete attendance records first, then the session
+    await supabase.from("elite_attendance").delete().eq("session_id", id);
+    const { error: deleteError } = await supabase
+      .from("elite_sessions")
+      .delete()
+      .eq("id", id);
+
+    if (deleteError) throw deleteError;
 
     return NextResponse.json({ ok: true });
   } catch (error) {

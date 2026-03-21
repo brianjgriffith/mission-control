@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { v4 as uuidv4 } from "uuid";
-import { getDb, type RepSaleRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/financials/sales
@@ -10,46 +9,47 @@ import { getDb, type RepSaleRow } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const rep = searchParams.get("rep");
     const product = searchParams.get("product");
 
-    const filters: string[] = [];
-    const values: unknown[] = [];
+    // Build filtered query
+    let query = supabase
+      .from("rep_sales")
+      .select("*")
+      .order("month", { ascending: true })
+      .order("rep_name", { ascending: true });
 
     if (rep) {
-      filters.push("rep_name = ?");
-      values.push(rep);
+      query = query.eq("rep_name", rep);
     }
     if (product) {
-      filters.push("product = ?");
-      values.push(product);
+      query = query.eq("product", product);
     }
 
-    const where = filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
-
-    const sales = db
-      .prepare(
-        `SELECT * FROM rep_sales ${where} ORDER BY month ASC, rep_name ASC`
-      )
-      .all(...values) as RepSaleRow[];
+    const { data: sales, error: salesError } = await query;
+    if (salesError) throw salesError;
 
     // Distinct rep names (unfiltered)
-    const reps = db
-      .prepare("SELECT DISTINCT rep_name FROM rep_sales ORDER BY rep_name")
-      .all() as { rep_name: string }[];
+    const { data: repRows, error: repError } = await supabase
+      .from("rep_sales")
+      .select("rep_name")
+      .order("rep_name", { ascending: true });
+    if (repError) throw repError;
+
+    const reps = [...new Set(repRows.map((r) => r.rep_name))];
 
     // Distinct products (unfiltered)
-    const products = db
-      .prepare("SELECT DISTINCT product FROM rep_sales ORDER BY product")
-      .all() as { product: string }[];
+    const { data: productRows, error: productError } = await supabase
+      .from("rep_sales")
+      .select("product")
+      .order("product", { ascending: true });
+    if (productError) throw productError;
 
-    return NextResponse.json({
-      sales,
-      reps: reps.map((r) => r.rep_name),
-      products: products.map((p) => p.product),
-    });
+    const products = [...new Set(productRows.map((p) => p.product))];
+
+    return NextResponse.json({ sales, reps, products });
   } catch (error) {
     console.error("[GET /api/financials/sales]", error);
     return NextResponse.json(
@@ -112,63 +112,58 @@ export async function POST(request: NextRequest) {
     const computedAmount = (body.new_amount ?? 0) + (body.recurring_amount ?? 0) - (body.refund_amount ?? 0);
     const finalAmount = hasSubFields ? computedAmount : body.amount;
 
-    const db = getDb();
+    const supabase = await createClient();
 
     // Check if a record already exists for this rep + month + product
-    const existing = db
-      .prepare(
-        "SELECT id FROM rep_sales WHERE rep_name = ? AND month = ? AND product = ?"
-      )
-      .get(body.rep_name, body.month, body.product) as
-      | { id: string }
-      | undefined;
+    const { data: existing, error: findError } = await supabase
+      .from("rep_sales")
+      .select("id")
+      .eq("rep_name", body.rep_name)
+      .eq("month", body.month)
+      .eq("product", body.product)
+      .maybeSingle();
+    if (findError) throw findError;
 
     if (existing) {
       // Update existing
-      db.prepare(
-        `UPDATE rep_sales
-         SET amount = ?, new_amount = ?, recurring_amount = ?, deal_count = ?, booked_calls = ?, refund_amount = ?, notes = ?, updated_at = datetime('now')
-         WHERE id = ?`
-      ).run(
-        finalAmount,
-        body.new_amount ?? 0,
-        body.recurring_amount ?? 0,
-        body.deal_count ?? 0,
-        body.booked_calls ?? 0,
-        body.refund_amount ?? 0,
-        body.notes ?? "",
-        existing.id
-      );
-
-      const sale = db
-        .prepare("SELECT * FROM rep_sales WHERE id = ?")
-        .get(existing.id) as RepSaleRow;
+      const { data: sale, error: updateError } = await supabase
+        .from("rep_sales")
+        .update({
+          amount: finalAmount,
+          new_amount: body.new_amount ?? 0,
+          recurring_amount: body.recurring_amount ?? 0,
+          deal_count: body.deal_count ?? 0,
+          booked_calls: body.booked_calls ?? 0,
+          refund_amount: body.refund_amount ?? 0,
+          notes: body.notes ?? "",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", existing.id)
+        .select()
+        .single();
+      if (updateError) throw updateError;
 
       return NextResponse.json({ sale });
     }
 
     // Create new
-    const id = uuidv4();
-    db.prepare(
-      `INSERT INTO rep_sales (id, rep_name, month, product, amount, new_amount, recurring_amount, deal_count, booked_calls, refund_amount, notes)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-    ).run(
-      id,
-      body.rep_name,
-      body.month,
-      body.product,
-      finalAmount,
-      body.new_amount ?? 0,
-      body.recurring_amount ?? 0,
-      body.deal_count ?? 0,
-      body.booked_calls ?? 0,
-      body.refund_amount ?? 0,
-      body.notes ?? ""
-    );
-
-    const sale = db
-      .prepare("SELECT * FROM rep_sales WHERE id = ?")
-      .get(id) as RepSaleRow;
+    const { data: sale, error: insertError } = await supabase
+      .from("rep_sales")
+      .insert({
+        rep_name: body.rep_name,
+        month: body.month,
+        product: body.product,
+        amount: finalAmount,
+        new_amount: body.new_amount ?? 0,
+        recurring_amount: body.recurring_amount ?? 0,
+        deal_count: body.deal_count ?? 0,
+        booked_calls: body.booked_calls ?? 0,
+        refund_amount: body.refund_amount ?? 0,
+        notes: body.notes ?? "",
+      })
+      .select()
+      .single();
+    if (insertError) throw insertError;
 
     return NextResponse.json({ sale }, { status: 201 });
   } catch (error) {

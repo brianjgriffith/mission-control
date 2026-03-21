@@ -1,24 +1,48 @@
 import { NextResponse } from "next/server";
-import { getDb, type StudentRow, type ChurnEventRow } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/mrr-history
 // Reconstructs monthly MRR from student signup + churn event data.
 // ---------------------------------------------------------------------------
 
+interface StudentRecord {
+  id: string;
+  signup_date: string;
+  status: string;
+  program: string;
+  monthly_revenue: number;
+}
+
+interface ChurnRecord {
+  id: string;
+  student_id: string;
+  event_type: string;
+  event_date: string;
+}
+
 export async function GET() {
   try {
-    const db = getDb();
+    const supabase = await createClient();
 
-    const students = db
-      .prepare("SELECT * FROM students ORDER BY signup_date ASC")
-      .all() as StudentRow[];
+    const { data: students, error: studentsError } = await supabase
+      .from("students")
+      .select("id, signup_date, status, program, monthly_revenue")
+      .order("signup_date", { ascending: true });
 
-    const churnEvents = db
-      .prepare("SELECT * FROM churn_events ORDER BY event_date ASC")
-      .all() as ChurnEventRow[];
+    if (studentsError) throw studentsError;
 
-    if (students.length === 0) {
+    const { data: churnEvents, error: churnError } = await supabase
+      .from("churn_events")
+      .select("id, student_id, event_type, event_date")
+      .order("event_date", { ascending: true });
+
+    if (churnError) throw churnError;
+
+    const typedStudents = (students ?? []) as StudentRecord[];
+    const typedChurnEvents = (churnEvents ?? []) as ChurnRecord[];
+
+    if (typedStudents.length === 0) {
       return NextResponse.json({
         months: [],
         concentration: {
@@ -34,12 +58,12 @@ export async function GET() {
     // -----------------------------------------------------------------------
     // Build month list from earliest signup to current month
     // -----------------------------------------------------------------------
-    const earliestSignup = students.reduce(
+    const earliestSignup = typedStudents.reduce(
       (min, s) => (s.signup_date && s.signup_date < min ? s.signup_date : min),
-      students[0].signup_date || new Date().toISOString().slice(0, 10)
+      typedStudents[0].signup_date || new Date().toISOString().slice(0, 10)
     );
 
-    const startMonth = earliestSignup.slice(0, 7); // YYYY-MM
+    const startMonth = earliestSignup.slice(0, 7);
     const now = new Date();
     const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
@@ -60,14 +84,8 @@ export async function GET() {
     // -----------------------------------------------------------------------
     // For each month, determine which students were "active"
     // -----------------------------------------------------------------------
-    // A student is active in month M if:
-    //   signup_date <= last day of M
-    //   AND not net-churned (cancel/pause/downgrade without a subsequent restart)
-    //   AND not imported as non-active with no churn events
-
-    // Build per-student churn event list (ordered by date)
-    const studentChurnMap = new Map<string, ChurnEventRow[]>();
-    for (const e of churnEvents) {
+    const studentChurnMap = new Map<string, ChurnRecord[]>();
+    for (const e of typedChurnEvents) {
       if (!studentChurnMap.has(e.student_id)) {
         studentChurnMap.set(e.student_id, []);
       }
@@ -76,7 +94,7 @@ export async function GET() {
 
     // Students imported as non-active with no churn events at all
     const importedInactive = new Set(
-      students
+      typedStudents
         .filter(
           (s) =>
             s.status !== "active" &&
@@ -88,16 +106,14 @@ export async function GET() {
     const months = allMonths.map((month) => {
       const monthEnd = lastDayOfMonth(month);
 
-      // Track which students are churned as of monthEnd
       const churnedSet = new Set<string>();
-      for (const s of students) {
+      for (const s of typedStudents) {
         if (s.signup_date > monthEnd) continue;
         if (importedInactive.has(s.id)) {
           churnedSet.add(s.id);
           continue;
         }
         const events = studentChurnMap.get(s.id) ?? [];
-        // Replay events up to monthEnd
         let isChurned = false;
         for (const e of events) {
           if (e.event_date > monthEnd) break;
@@ -110,8 +126,7 @@ export async function GET() {
         if (isChurned) churnedSet.add(s.id);
       }
 
-      // Active students for this month
-      const activeStudents = students.filter(
+      const activeStudents = typedStudents.filter(
         (s) =>
           s.signup_date &&
           s.signup_date <= monthEnd &&
@@ -150,17 +165,16 @@ export async function GET() {
     // -----------------------------------------------------------------------
     // Revenue concentration (based on current active students)
     // -----------------------------------------------------------------------
-    const activeStudents = students.filter(
+    const activeStudents = typedStudents.filter(
       (s) => s.status === "active"
     );
     const revenues = activeStudents
       .map((s) => s.monthly_revenue || 0)
-      .sort((a, b) => b - a); // descending
+      .sort((a, b) => b - a);
 
     const totalRevenue = revenues.reduce((s, r) => s + r, 0);
     const avg_revenue = revenues.length > 0 ? Math.round(totalRevenue / revenues.length) : 0;
 
-    // Median
     let median_revenue = 0;
     if (revenues.length > 0) {
       const mid = Math.floor(revenues.length / 2);
@@ -170,13 +184,11 @@ export async function GET() {
           : revenues[mid];
     }
 
-    // Top 5 and top 10 concentration
     const top5Rev = revenues.slice(0, 5).reduce((s, r) => s + r, 0);
     const top10Rev = revenues.slice(0, 10).reduce((s, r) => s + r, 0);
     const top_5_pct = totalRevenue > 0 ? Math.round((top5Rev / totalRevenue) * 1000) / 10 : 0;
     const top_10_pct = totalRevenue > 0 ? Math.round((top10Rev / totalRevenue) * 1000) / 10 : 0;
 
-    // Revenue tier buckets
     const tierRanges = [
       { range: "$0-500", min: 0, max: 500 },
       { range: "$500-1000", min: 500, max: 1000 },
@@ -219,7 +231,6 @@ export async function GET() {
 /** Get the last day of a YYYY-MM month as YYYY-MM-DD string */
 function lastDayOfMonth(month: string): string {
   const [y, m] = month.split("-").map(Number);
-  // Day 0 of next month = last day of this month
   const last = new Date(y, m, 0);
   return `${y}-${String(m).padStart(2, "0")}-${String(last.getDate()).padStart(2, "0")}`;
 }

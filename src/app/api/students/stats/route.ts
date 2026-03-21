@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getDb } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/stats
@@ -9,85 +9,89 @@ import { getDb } from "@/lib/db";
 
 export async function GET(request: NextRequest) {
   try {
-    const db = getDb();
+    const supabase = await createClient();
     const { searchParams } = new URL(request.url);
     const month =
       searchParams.get("month") || new Date().toISOString().slice(0, 7);
 
     // Total active students by program
-    const eliteCount = db
-      .prepare(
-        "SELECT COUNT(*) AS cnt FROM students WHERE program = 'elite' AND status = 'active'"
-      )
-      .get() as { cnt: number };
+    const { count: eliteCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .eq("program", "elite")
+      .eq("status", "active");
 
-    const acceleratorCount = db
-      .prepare(
-        "SELECT COUNT(*) AS cnt FROM students WHERE program = 'accelerator' AND status = 'active'"
-      )
-      .get() as { cnt: number };
+    const { count: acceleratorCount } = await supabase
+      .from("students")
+      .select("*", { count: "exact", head: true })
+      .eq("program", "accelerator")
+      .eq("status", "active");
+
+    const eliteCnt = eliteCount ?? 0;
+    const acceleratorCnt = acceleratorCount ?? 0;
 
     // Monthly churn: count and revenue impact
-    const churnStats = db
-      .prepare(
-        `SELECT COUNT(*) AS churn_count, COALESCE(SUM(monthly_revenue_impact), 0) AS churn_revenue
-         FROM churn_events
-         WHERE event_date LIKE ? AND event_type != 'restart'`
-      )
-      .get(`${month}%`) as { churn_count: number; churn_revenue: number };
+    const { data: churnData } = await supabase
+      .from("churn_events")
+      .select("monthly_revenue_impact")
+      .like("event_date", `${month}%`)
+      .neq("event_type", "restart");
 
-    // New students this month: students whose signup_date falls in the month
-    const newStudentStats = db
-      .prepare(
-        `SELECT COUNT(*) AS new_count, COALESCE(SUM(monthly_revenue), 0) AS new_revenue
-         FROM students
-         WHERE signup_date LIKE ?`
-      )
-      .get(`${month}%`) as { new_count: number; new_revenue: number };
+    const churnCount = churnData?.length ?? 0;
+    const churnRevenue = churnData?.reduce(
+      (sum, e) => sum + (e.monthly_revenue_impact || 0),
+      0
+    ) ?? 0;
 
-    // Churn rate: monthly_churn_count / (total_active + monthly_churn_count) * 100
-    const totalActive = eliteCount.cnt + acceleratorCount.cnt;
-    const churnDenominator = totalActive + churnStats.churn_count;
+    // New students this month
+    const { data: newStudents } = await supabase
+      .from("students")
+      .select("monthly_revenue")
+      .like("signup_date", `${month}%`);
+
+    const newCount = newStudents?.length ?? 0;
+    const newRevenue = newStudents?.reduce(
+      (sum, s) => sum + (s.monthly_revenue || 0),
+      0
+    ) ?? 0;
+
+    // Churn rate
+    const totalActive = eliteCnt + acceleratorCnt;
+    const churnDenominator = totalActive + churnCount;
     const churnRate =
       churnDenominator > 0
-        ? Math.round(
-            (churnStats.churn_count / churnDenominator) * 100 * 100
-          ) / 100
+        ? Math.round((churnCount / churnDenominator) * 100 * 100) / 100
         : 0;
 
     // Average attendance rate across sessions this month
-    // For each session in the month, compute attended / total_elite_students
-    const sessionsThisMonth = db
-      .prepare(
-        `SELECT es.id,
-                COALESCE(att.attended_count, 0) AS attended_count
-         FROM elite_sessions es
-         LEFT JOIN (
-           SELECT session_id, COUNT(*) AS attended_count
-           FROM elite_attendance
-           WHERE attended = 1
-           GROUP BY session_id
-         ) att ON att.session_id = es.id
-         WHERE es.session_date LIKE ?`
-      )
-      .all(`${month}%`) as { id: string; attended_count: number }[];
+    const { data: sessionsThisMonth } = await supabase
+      .from("elite_sessions")
+      .select("id")
+      .like("session_date", `${month}%`);
 
     let avgAttendanceRate = 0;
-    if (sessionsThisMonth.length > 0 && eliteCount.cnt > 0) {
-      const totalRate = sessionsThisMonth.reduce((sum, s) => {
-        return sum + (s.attended_count / eliteCount.cnt) * 100;
-      }, 0);
+    if (sessionsThisMonth && sessionsThisMonth.length > 0 && eliteCnt > 0) {
+      let totalRate = 0;
+      for (const session of sessionsThisMonth) {
+        const { count: attendedCount } = await supabase
+          .from("elite_attendance")
+          .select("*", { count: "exact", head: true })
+          .eq("session_id", session.id)
+          .eq("attended", true);
+
+        totalRate += ((attendedCount ?? 0) / eliteCnt) * 100;
+      }
       avgAttendanceRate =
         Math.round((totalRate / sessionsThisMonth.length) * 100) / 100;
     }
 
     return NextResponse.json({
-      total_active_elite: eliteCount.cnt,
-      total_active_accelerator: acceleratorCount.cnt,
-      monthly_churn_count: churnStats.churn_count,
-      monthly_churn_revenue: churnStats.churn_revenue,
-      monthly_new_students: newStudentStats.new_count,
-      monthly_new_revenue: newStudentStats.new_revenue,
+      total_active_elite: eliteCnt,
+      total_active_accelerator: acceleratorCnt,
+      monthly_churn_count: churnCount,
+      monthly_churn_revenue: churnRevenue,
+      monthly_new_students: newCount,
+      monthly_new_revenue: newRevenue,
       churn_rate: churnRate,
       avg_attendance_rate: avgAttendanceRate,
     });
