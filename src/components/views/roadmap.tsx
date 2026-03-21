@@ -39,7 +39,7 @@ const phases: Phase[] = [
     title: "Foundation",
     subtitle: "Cloud infrastructure & auth",
     icon: <Database className="h-5 w-5" />,
-    status: "active",
+    status: "complete",
     outcome:
       "Executive team can log in and see existing dashboard views with current data, hosted in the cloud.",
     tasks: [
@@ -57,7 +57,7 @@ const phases: Phase[] = [
       { label: "Deploy to Vercel", status: "done" },
       { label: "Migrate existing data to Supabase", status: "done" },
       { label: "Environment variable setup — Supabase creds on Vercel", status: "done" },
-      { label: "Admin sync health panel — view sync log, surface errors, manual re-trigger per workflow", status: "not_started" },
+      { label: "Admin sync health panel — view sync log, surface errors, manual re-trigger per workflow", status: "done" },
     ],
   },
   {
@@ -65,19 +65,21 @@ const phases: Phase[] = [
     title: "Purchase & Sales Sync",
     subtitle: "Replace manual sales entry",
     icon: <ShoppingCart className="h-5 w-5" />,
-    status: "upcoming",
+    status: "active",
     outcome:
       "Sales tab shows real revenue data without manual entry, every sale is attributable to a rep, and lead quality is tracked from meeting to close.",
     dependencies: "Phase 0",
     tasks: [
       { label: "DECISION: Charge title parsing approach — Option D (hybrid) selected", status: "done" },
       { label: "HubSpot API key setup + environment variables on Vercel", status: "done" },
-      { label: "HubSpot charge sync — webhook + daily schedule", status: "not_started" },
+      { label: "Product catalogue seeded (25 products, 27 title mappings)", status: "done" },
+      { label: "Charges view — company-wide transaction ledger with charts + filters", status: "done" },
+      { label: "Contact sync from HubSpot (64K+ contacts backfilled)", status: "done" },
+      { label: "Historical charge backfill (238K charges from HubSpot)", status: "in_progress" },
+      { label: "HubSpot charge sync — webhook + daily schedule (n8n)", status: "not_started" },
       { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status (dedup via SamCart transaction ID)", status: "not_started" },
       { label: "SamCart subscription event sync — dunning failures, payment retries, pauses (early churn signals)", status: "not_started" },
       { label: "Kajabi sync — evaluate API, direct sync if richer than HubSpot charges", status: "not_started" },
-      { label: "Contact sync from HubSpot (with contact_segments junction table — contacts can belong to many segments)", status: "not_started" },
-      { label: "Historical charge backfill (all-time, ~2yr HubSpot history)", status: "not_started" },
       { label: "Sales attribution — auto from SamCart affiliates", status: "not_started" },
       { label: "Sales attribution — manual UI for non-affiliate purchases", status: "not_started" },
       { label: "Meeting sync from HubSpot Meetings API", status: "not_started" },
