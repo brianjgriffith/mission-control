@@ -61,43 +61,15 @@ export async function GET(request: NextRequest) {
 
     if (error) throw error;
 
-    // Summary stats query (for the selected filters)
-    let statsQuery = supabase
-      .from("charges")
-      .select("amount, product_id, source_platform, charge_date");
+    // Summary stats via server-side RPC (avoids Supabase 1000-row default limit)
+    const { data: summary, error: statsError } = await supabase.rpc("get_charge_stats", {
+      filter_month: month || null,
+      filter_product_id: productId || null,
+      filter_source_platform: sourcePlatform || null,
+    });
 
-    if (month) {
-      const startDate = `${month}-01T00:00:00Z`;
-      const [y, m] = month.split("-").map(Number);
-      const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-      const endDate = `${nextMonth}-01T00:00:00Z`;
-      statsQuery = statsQuery.gte("charge_date", startDate).lt("charge_date", endDate);
-    }
-    if (productId) {
-      statsQuery = statsQuery.eq("product_id", productId);
-    }
-    if (sourcePlatform) {
-      statsQuery = statsQuery.eq("source_platform", sourcePlatform);
-    }
-
-    const { data: statsData } = await statsQuery;
-
-    // Compute summary
-    const totalRevenue = (statsData || []).reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
-    const totalCharges = statsData?.length || 0;
-
-    // Revenue by product
-    const byProduct = new Map<string, number>();
-    for (const c of statsData || []) {
-      const pid = c.product_id || "unmatched";
-      byProduct.set(pid, (byProduct.get(pid) || 0) + (Number(c.amount) || 0));
-    }
-
-    // Revenue by platform
-    const byPlatform = new Map<string, number>();
-    for (const c of statsData || []) {
-      const p = c.source_platform || "unknown";
-      byPlatform.set(p, (byPlatform.get(p) || 0) + (Number(c.amount) || 0));
+    if (statsError) {
+      console.error("[GET /api/charges] stats RPC error:", statsError.message);
     }
 
     return NextResponse.json({
@@ -108,11 +80,11 @@ export async function GET(request: NextRequest) {
         total: count || 0,
         total_pages: Math.ceil((count || 0) / perPage),
       },
-      summary: {
-        total_revenue: totalRevenue,
-        total_charges: totalCharges,
-        by_product: Object.fromEntries(byProduct),
-        by_platform: Object.fromEntries(byPlatform),
+      summary: summary || {
+        total_revenue: 0,
+        total_charges: 0,
+        by_product: {},
+        by_platform: {},
       },
     });
   } catch (error) {

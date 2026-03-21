@@ -60,15 +60,17 @@ interface ByProductEntry {
   count: number;
 }
 
+interface ChargeSummary {
+  total_revenue: number;
+  total_charges: number;
+  by_product: Record<string, number>;
+  by_platform: Record<string, number>;
+}
+
 interface ChargesResponse {
   charges: Charge[];
   pagination: Pagination;
-  summary: {
-    total_revenue: number;
-    total_charges: number;
-    by_product: Record<string, ByProductEntry>;
-    by_platform: Record<string, ByProductEntry>;
-  };
+  summary: ChargeSummary;
 }
 
 interface MonthlyEntry {
@@ -301,10 +303,10 @@ export function ChargesView() {
   // -------------------------------------------------------------------------
   const productBreakdown = useMemo(() => {
     if (!summary?.by_product) return [];
-    const entries = Object.entries(summary.by_product).map(([name, data]) => ({
-      name,
-      revenue: data.total,
-      count: data.count,
+    const productNames = stats?.products || {};
+    const entries = Object.entries(summary.by_product).map(([id, revenue]) => ({
+      name: productNames[id]?.short_name || productNames[id]?.name || (id === "unmatched" ? "Unmatched" : id.slice(0, 12) + "…"),
+      revenue: Number(revenue) || 0,
     }));
     entries.sort((a, b) => b.revenue - a.revenue);
     const total = entries.reduce((s, e) => s + e.revenue, 0);
@@ -312,7 +314,7 @@ export function ChargesView() {
       ...e,
       pct: total > 0 ? (e.revenue / total) * 100 : 0,
     }));
-  }, [summary]);
+  }, [summary, stats]);
 
   // -------------------------------------------------------------------------
   // Stat card values

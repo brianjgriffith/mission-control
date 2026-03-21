@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // ---------------------------------------------------------------------------
 // GET /api/charges/stats
 // Returns monthly revenue aggregations for charts.
+// Uses server-side RPC to avoid Supabase 1000-row default limit.
 // Optional: ?months=12 (default 12), ?product_id
 // ---------------------------------------------------------------------------
 
@@ -15,25 +16,22 @@ export async function GET(request: NextRequest) {
     const monthCount = parseInt(searchParams.get("months") || "12", 10);
     const productId = searchParams.get("product_id");
 
-    // Calculate date range
+    // Calculate start date
     const now = new Date();
     const startDate = new Date(now.getFullYear(), now.getMonth() - monthCount + 1, 1);
-    const startStr = startDate.toISOString();
 
-    let query = supabase
-      .from("charges")
-      .select("amount, charge_date, product_id, source_platform")
-      .gte("charge_date", startStr)
-      .order("charge_date", { ascending: true });
+    // Fetch monthly aggregations via RPC
+    const { data: monthlyRaw, error: monthlyError } = await supabase.rpc(
+      "get_monthly_charge_stats",
+      {
+        start_date: startDate.toISOString(),
+        filter_product_id: productId || null,
+      }
+    );
 
-    if (productId) {
-      query = query.eq("product_id", productId);
-    }
+    if (monthlyError) throw monthlyError;
 
-    const { data: charges, error } = await query;
-    if (error) throw error;
-
-    // Also fetch product names for the legend
+    // Fetch product names for the legend
     const { data: products } = await supabase
       .from("products")
       .select("id, name, short_name, product_type, program");
@@ -43,55 +41,44 @@ export async function GET(request: NextRequest) {
       productMap.set(p.id, { name: p.name, short_name: p.short_name, program: p.program });
     }
 
-    // Aggregate by month
-    interface MonthData {
-      month: string; // YYYY-MM
+    // The RPC returns an array of { month, total, count, by_product }
+    const rpcMonths = (monthlyRaw || []) as Array<{
+      month: string;
+      total: number;
+      count: number;
+      by_product: Record<string, number>;
+    }>;
+
+    // Build a map for quick lookup
+    const rpcMap = new Map<string, typeof rpcMonths[0]>();
+    for (const m of rpcMonths) {
+      rpcMap.set(m.month, m);
+    }
+
+    // Fill in missing months with zeros
+    const monthlyData: Array<{
+      month: string;
       total: number;
       count: number;
       by_product: Record<string, number>;
       by_platform: Record<string, number>;
-    }
+    }> = [];
 
-    const months = new Map<string, MonthData>();
-
-    for (const c of charges || []) {
-      const date = new Date(c.charge_date);
-      const monthKey = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`;
-      const amount = Number(c.amount) || 0;
-
-      if (!months.has(monthKey)) {
-        months.set(monthKey, {
-          month: monthKey,
-          total: 0,
-          count: 0,
-          by_product: {},
-          by_platform: {},
-        });
-      }
-
-      const m = months.get(monthKey)!;
-      m.total += amount;
-      m.count++;
-
-      const prodKey = c.product_id || "unmatched";
-      m.by_product[prodKey] = (m.by_product[prodKey] || 0) + amount;
-
-      const platKey = c.source_platform || "unknown";
-      m.by_platform[platKey] = (m.by_platform[platKey] || 0) + amount;
-    }
-
-    // Fill in missing months with zeros
-    const monthlyData: MonthData[] = [];
     const cursor = new Date(startDate);
     while (cursor <= now) {
       const key = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`;
-      monthlyData.push(
-        months.get(key) || { month: key, total: 0, count: 0, by_product: {}, by_platform: {} }
-      );
+      const rpcEntry = rpcMap.get(key);
+      monthlyData.push({
+        month: key,
+        total: rpcEntry?.total || 0,
+        count: rpcEntry?.count || 0,
+        by_product: rpcEntry?.by_product || {},
+        by_platform: {},
+      });
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
-    // Top products by total revenue
+    // Top products by total revenue across all months
     const productTotals = new Map<string, number>();
     for (const m of monthlyData) {
       for (const [pid, amt] of Object.entries(m.by_product)) {
