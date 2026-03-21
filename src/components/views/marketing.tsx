@@ -1399,7 +1399,7 @@ function ProjectionsTab({
                 <YAxis stroke="#6c7086" fontSize={10} tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} tickLine={false} />
                 <RechartsTooltip
                   {...chartTooltipStyle}
-                  formatter={(value: number, name: string) => [fmtMoney(value), name]}
+                  formatter={(value: number | undefined, name: string) => [fmtMoney(value ?? 0), name]}
                 />
                 <Legend
                   iconSize={8}
@@ -1438,8 +1438,8 @@ function ProjectionsTab({
                 />
                 <RechartsTooltip
                   {...chartTooltipStyle}
-                  formatter={(value: number, name: string) =>
-                    name.includes("Revenue") ? [fmtMoney(value), name] : [value, name]
+                  formatter={(value: number | undefined, name: string) =>
+                    name.includes("Revenue") ? [fmtMoney(value ?? 0), name] : [value ?? 0, name]
                   }
                 />
                 <Legend iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 8 }} />
