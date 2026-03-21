@@ -71,7 +71,7 @@ const phases: Phase[] = [
     dependencies: "Phase 0",
     tasks: [
       { label: "DECISION: Charge title parsing approach — Option D (hybrid) selected", status: "done" },
-      { label: "HubSpot API key setup + environment variables on Vercel", status: "not_started" },
+      { label: "HubSpot API key setup + environment variables on Vercel", status: "done" },
       { label: "HubSpot charge sync — webhook + daily schedule", status: "not_started" },
       { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status (dedup via SamCart transaction ID)", status: "not_started" },
       { label: "SamCart subscription event sync — dunning failures, payment retries, pauses (early churn signals)", status: "not_started" },
