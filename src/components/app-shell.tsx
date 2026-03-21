@@ -23,8 +23,16 @@ import { NewAssetDialog } from "@/components/new-asset-dialog";
 import { KeyboardShortcuts } from "@/components/keyboard-shortcuts";
 import { useStore } from "@/lib/store";
 import type { View } from "@/lib/types";
+import { createClient } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import type { AuthUser } from "@/lib/auth";
 
-export function AppShell() {
+interface AppShellProps {
+  user: AuthUser;
+}
+
+export function AppShell({ user }: AppShellProps) {
+  const router = useRouter();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const activeView = useStore((s) => s.activeView);
@@ -51,6 +59,13 @@ export function AppShell() {
   const toggleNewProjectDialog = useStore((s) => s.toggleNewProjectDialog);
   const isNewAssetDialogOpen = useStore((s) => s.isNewAssetDialogOpen);
   const toggleNewAssetDialog = useStore((s) => s.toggleNewAssetDialog);
+
+  const handleSignOut = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }, [router]);
 
   // Initial data fetch
   useEffect(() => {
@@ -186,6 +201,9 @@ export function AppShell() {
         onProjectClick={navigateToProject}
         onNewProject={toggleNewProjectDialog}
         onReorderProjects={reorderProjects}
+        userName={user.profile.full_name || user.email}
+        userRole={user.profile.role}
+        onSignOut={handleSignOut}
       />
 
       <main className="flex-1 overflow-hidden">

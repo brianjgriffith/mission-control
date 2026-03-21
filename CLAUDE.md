@@ -47,7 +47,7 @@ Migration files live in `supabase/migrations/` and must be manually applied by B
 
 | # | File | Description | Status | Depends On | Date Created |
 |---|------|-------------|--------|------------|--------------|
-| | | | | | |
+| 1 | `001_initial_schema.sql` | Full v2 schema: profiles/RBAC, products, contacts, charges, sales reps, meetings, students, funnels, journey events, sync log, revenue snapshots, budget targets, rep quotas. Includes RLS policies, updated_at triggers, and helper functions. | APPLIED | — | 2026-03-20 |
 
 **Status values:**
 - `PENDING` — migration file created, waiting for Brian to apply in Supabase

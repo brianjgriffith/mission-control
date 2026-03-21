@@ -23,6 +23,7 @@ import {
   GraduationCap,
   GripVertical,
   Megaphone,
+  LogOut,
 } from "lucide-react";
 import {
   DndContext,
@@ -55,6 +56,9 @@ interface SidebarProps {
   onProjectClick: (projectId: string) => void;
   onNewProject: () => void;
   onReorderProjects: (projectIds: string[]) => void;
+  userName?: string;
+  userRole?: string;
+  onSignOut?: () => void;
 }
 
 const GLOBAL_NAV: { id: View; label: string; icon: typeof LayoutDashboard; shortcut: string }[] = [
@@ -163,6 +167,9 @@ export function Sidebar({
   onProjectClick,
   onNewProject,
   onReorderProjects,
+  userName,
+  userRole,
+  onSignOut,
 }: SidebarProps) {
   const activeProjects = projects.filter((p) => p.status === "active");
 
@@ -393,6 +400,52 @@ export function Sidebar({
           return button;
         })}
       </nav>
+
+      {/* User / Sign Out */}
+      {userName && (
+        <div className="border-t border-sidebar-border p-2">
+          {collapsed ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={onSignOut}
+                  className="flex w-full items-center justify-center rounded-md p-1.5 text-sidebar-foreground/40 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground/60"
+                >
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="right">
+                {userName} — Sign out
+              </TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="flex items-center gap-2 rounded-md px-2 py-1.5">
+              <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[10px] font-semibold text-primary">
+                {userName.charAt(0).toUpperCase()}
+              </div>
+              <div className="flex min-w-0 flex-1 flex-col">
+                <span className="truncate text-xs font-medium text-sidebar-foreground/80">
+                  {userName}
+                </span>
+                {userRole && (
+                  <span className="text-[10px] capitalize text-sidebar-foreground/40">
+                    {userRole.replace("_", " ")}
+                  </span>
+                )}
+              </div>
+              <button
+                onClick={onSignOut}
+                className="rounded p-1 text-sidebar-foreground/30 transition-colors hover:bg-sidebar-accent/50 hover:text-sidebar-foreground/60"
+                title="Sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Collapse Toggle */}
       <div className="border-t border-sidebar-border p-2">
