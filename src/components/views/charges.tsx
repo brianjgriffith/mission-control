@@ -10,7 +10,9 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  AlertTriangle,
 } from "lucide-react";
+import { UnmatchedManager } from "@/components/unmatched-manager";
 import {
   BarChart,
   Bar,
@@ -201,6 +203,7 @@ export function ChargesView() {
   const [platformFilter, setPlatformFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [unmatchedOpen, setUnmatchedOpen] = useState(false);
 
   // -------------------------------------------------------------------------
   // Fetch stats (chart data)
@@ -362,6 +365,16 @@ export function ChargesView() {
             Company-wide transaction ledger from HubSpot
           </p>
         </div>
+        {/* Unmatched button */}
+        {summary && summary.by_group?.Unmatched > 0 && (
+          <button
+            onClick={() => setUnmatchedOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+          >
+            <AlertTriangle className="h-3.5 w-3.5" />
+            {fmtCurrency(summary.by_group.Unmatched)} unmatched
+          </button>
+        )}
 
         {/* Stat Cards */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -659,6 +672,16 @@ export function ChargesView() {
           )}
         </div>
       </div>
+
+      {/* Unmatched Manager Modal */}
+      <UnmatchedManager
+        open={unmatchedOpen}
+        onClose={() => setUnmatchedOpen(false)}
+        onAssigned={() => {
+          fetchCharges();
+          fetchStats();
+        }}
+      />
     </div>
   );
 }
