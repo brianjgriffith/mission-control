@@ -63,6 +63,7 @@ interface ByProductEntry {
 interface ChargeSummary {
   total_revenue: number;
   total_charges: number;
+  by_group: Record<string, number>;
   by_product: Record<string, number>;
   by_platform: Record<string, number>;
 }
@@ -77,23 +78,23 @@ interface MonthlyEntry {
   month: string;
   total: number;
   count: number;
-  by_product: Record<string, number>;
+  by_group: Record<string, number>;
 }
 
-interface TopProduct {
-  id: string;
-  short_name: string;
+interface TopGroup {
+  name: string;
   total: number;
 }
 
 interface StatsProduct {
   name: string;
   short_name: string;
+  group_name: string | null;
 }
 
 interface StatsResponse {
   monthly: MonthlyEntry[];
-  top_products: TopProduct[];
+  top_groups: TopGroup[];
   products: Record<string, StatsProduct>;
 }
 
@@ -258,28 +259,21 @@ export function ChargesView() {
   }, [month, productFilter, platformFilter, searchQuery]);
 
   // -------------------------------------------------------------------------
-  // Chart data
+  // Chart data — grouped by product family
   // -------------------------------------------------------------------------
-  const topProductKeys = useMemo(() => {
+  const topGroupKeys = useMemo(() => {
     if (!stats) return [];
-    return stats.top_products.slice(0, 8).map((p) => p.short_name);
+    return stats.top_groups.slice(0, 8).map((g) => g.name);
   }, [stats]);
 
   const chartData = useMemo(() => {
     if (!stats) return [];
     return stats.monthly.map((m) => {
       const row: Record<string, string | number> = { month: formatMonth(m.month) };
-      // Map product ids to short_names and sum
-      const byName: Record<string, number> = {};
-      for (const [prodId, amount] of Object.entries(m.by_product)) {
-        const prod = stats.products[prodId];
-        const name = prod?.short_name ?? "Other";
-        byName[name] = (byName[name] ?? 0) + amount;
-      }
       let otherTotal = 0;
-      for (const [name, amount] of Object.entries(byName)) {
-        if (topProductKeys.includes(name)) {
-          row[name] = amount;
+      for (const [group, amount] of Object.entries(m.by_group)) {
+        if (topGroupKeys.includes(group)) {
+          row[group] = amount;
         } else {
           otherTotal += amount;
         }
@@ -287,25 +281,23 @@ export function ChargesView() {
       if (otherTotal > 0) row["Other"] = otherTotal;
       return row;
     });
-  }, [stats, topProductKeys]);
+  }, [stats, topGroupKeys]);
 
   const barKeys = useMemo(() => {
-    const keys = [...topProductKeys];
-    // Check if any row has "Other"
+    const keys = [...topGroupKeys];
     if (chartData.some((d) => (d["Other"] as number) > 0)) {
       keys.push("Other");
     }
     return keys;
-  }, [topProductKeys, chartData]);
+  }, [topGroupKeys, chartData]);
 
   // -------------------------------------------------------------------------
-  // Product breakdown from summary
+  // Revenue breakdown by product group
   // -------------------------------------------------------------------------
   const productBreakdown = useMemo(() => {
-    if (!summary?.by_product) return [];
-    const productNames = stats?.products || {};
-    const entries = Object.entries(summary.by_product).map(([id, revenue]) => ({
-      name: productNames[id]?.short_name || productNames[id]?.name || (id === "unmatched" ? "Unmatched" : id.slice(0, 12) + "…"),
+    if (!summary?.by_group) return [];
+    const entries = Object.entries(summary.by_group).map(([name, revenue]) => ({
+      name,
       revenue: Number(revenue) || 0,
     }));
     entries.sort((a, b) => b.revenue - a.revenue);
@@ -314,7 +306,7 @@ export function ChargesView() {
       ...e,
       pct: total > 0 ? (e.revenue / total) * 100 : 0,
     }));
-  }, [summary, stats]);
+  }, [summary]);
 
   // -------------------------------------------------------------------------
   // Stat card values
@@ -447,9 +439,9 @@ export function ChargesView() {
             )}
           </div>
 
-          {/* Revenue by Product */}
+          {/* Revenue by Product Group */}
           <div className="rounded-lg border border-border/50 bg-card/40 p-4">
-            <h2 className="mb-3 text-sm font-semibold text-foreground">Revenue by Product</h2>
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Revenue by Product Family</h2>
             {loading ? (
               <div className="flex h-56 items-center justify-center text-xs text-muted-foreground">
                 Loading...

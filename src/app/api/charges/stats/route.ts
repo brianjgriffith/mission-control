@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
     // Fetch product names for the legend
     const { data: products } = await supabase
       .from("products")
-      .select("id, name, short_name, product_type, program");
+      .select("id, name, short_name, product_type, program, group_name");
 
     const productMap = new Map<string, { name: string; short_name: string; program: string | null }>();
     for (const p of products || []) {
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       month: string;
       total: number;
       count: number;
-      by_product: Record<string, number>;
+      by_group: Record<string, number>;
     }>;
 
     // Build a map for quick lookup
@@ -60,8 +60,7 @@ export async function GET(request: NextRequest) {
       month: string;
       total: number;
       count: number;
-      by_product: Record<string, number>;
-      by_platform: Record<string, number>;
+      by_group: Record<string, number>;
     }> = [];
 
     const cursor = new Date(startDate);
@@ -72,35 +71,31 @@ export async function GET(request: NextRequest) {
         month: key,
         total: rpcEntry?.total || 0,
         count: rpcEntry?.count || 0,
-        by_product: rpcEntry?.by_product || {},
-        by_platform: {},
+        by_group: rpcEntry?.by_group || {},
       });
       cursor.setMonth(cursor.getMonth() + 1);
     }
 
-    // Top products by total revenue across all months
-    const productTotals = new Map<string, number>();
+    // Top groups by total revenue across all months
+    const groupTotals = new Map<string, number>();
     for (const m of monthlyData) {
-      for (const [pid, amt] of Object.entries(m.by_product)) {
-        productTotals.set(pid, (productTotals.get(pid) || 0) + amt);
+      for (const [group, amt] of Object.entries(m.by_group)) {
+        groupTotals.set(group, (groupTotals.get(group) || 0) + amt);
       }
     }
-    const topProducts = Array.from(productTotals.entries())
+    const topGroups = Array.from(groupTotals.entries())
       .sort((a, b) => b[1] - a[1])
       .slice(0, 10)
-      .map(([id, total]) => ({
-        id,
-        name: productMap.get(id)?.name || "Unmatched",
-        short_name: productMap.get(id)?.short_name || "Unmatched",
-        program: productMap.get(id)?.program || null,
+      .map(([name, total]) => ({
+        name,
         total,
       }));
 
     return NextResponse.json({
       monthly: monthlyData,
-      top_products: topProducts,
+      top_groups: topGroups,
       products: Object.fromEntries(
-        (products || []).map((p) => [p.id, { name: p.name, short_name: p.short_name, program: p.program }])
+        (products || []).map((p) => [p.id, { name: p.name, short_name: p.short_name, program: p.program, group_name: p.group_name }])
       ),
     });
   } catch (error) {
