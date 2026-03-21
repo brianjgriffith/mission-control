@@ -75,7 +75,7 @@ const phases: Phase[] = [
       { label: "Product catalogue seeded (25 products, 27 title mappings)", status: "done" },
       { label: "Charges view — company-wide transaction ledger with charts + filters", status: "done" },
       { label: "Contact sync from HubSpot (64K+ contacts backfilled)", status: "done" },
-      { label: "Historical charge backfill (238K charges from HubSpot)", status: "in_progress" },
+      { label: "Historical charge backfill (238K charges, 64K contacts from HubSpot)", status: "done" },
       { label: "HubSpot charge sync — webhook + daily schedule (n8n)", status: "not_started" },
       { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status (dedup via SamCart transaction ID)", status: "not_started" },
       { label: "SamCart subscription event sync — dunning failures, payment retries, pauses (early churn signals)", status: "not_started" },
