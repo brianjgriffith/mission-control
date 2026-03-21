@@ -23,6 +23,7 @@ export type View =
   | 'calendar'
   | 'students'
   | 'marketing'
+  | 'meetings'
   | 'sync_health';
 
 // ---------------------------------------------------------------------------
