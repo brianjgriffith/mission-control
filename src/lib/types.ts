@@ -19,6 +19,7 @@ export type View =
   | 'tooling'
   | 'archive'
   | 'sales'
+  | 'charges'
   | 'calendar'
   | 'students'
   | 'marketing';

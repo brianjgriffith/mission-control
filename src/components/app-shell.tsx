@@ -14,6 +14,7 @@ import { ArchiveView } from "@/components/views/archive";
 import { CalendarView } from "@/components/views/calendar";
 import { StudentsView } from "@/components/views/students";
 import { MarketingView } from "@/components/views/marketing";
+import { ChargesView } from "@/components/views/charges";
 import { CommandPalette } from "@/components/command-palette";
 import { QuickAdd } from "@/components/quick-add";
 import { CardDetail } from "@/components/card-detail";
@@ -172,6 +173,8 @@ export function AppShell({ user }: AppShellProps) {
         return <FinancialsView />;
       case "sales":
         return <SalesView />;
+      case "charges":
+        return <ChargesView />;
       case "assets":
         return <AssetsView />;
       case "tooling":
