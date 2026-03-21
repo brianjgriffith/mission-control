@@ -14,10 +14,26 @@ export async function GET(request: NextRequest) {
 
     const month = searchParams.get("month"); // YYYY-MM
     const productId = searchParams.get("product_id");
+    const groupName = searchParams.get("group"); // product family filter
     const sourcePlatform = searchParams.get("source_platform");
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
+
+    // If filtering by group, first get the product IDs in that group
+    let groupProductIds: string[] | null = null;
+    if (groupName) {
+      if (groupName === "Unmatched") {
+        // Special case: charges with no product
+        groupProductIds = [];
+      } else {
+        const { data: groupProducts } = await supabase
+          .from("products")
+          .select("id")
+          .eq("group_name", groupName);
+        groupProductIds = (groupProducts || []).map((p) => p.id);
+      }
+    }
 
     // Build query
     let query = supabase
@@ -42,6 +58,14 @@ export async function GET(request: NextRequest) {
     }
     if (productId) {
       query = query.eq("product_id", productId);
+    }
+    if (groupProductIds !== null) {
+      if (groupProductIds.length === 0) {
+        // Unmatched: no product_id
+        query = query.is("product_id", null);
+      } else {
+        query = query.in("product_id", groupProductIds);
+      }
     }
     if (sourcePlatform) {
       query = query.eq("source_platform", sourcePlatform);

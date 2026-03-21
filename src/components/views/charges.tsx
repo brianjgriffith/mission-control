@@ -196,6 +196,7 @@ export function ChargesView() {
 
   // Filter state
   const [month, setMonth] = useState(getCurrentMonth());
+  const [groupFilter, setGroupFilter] = useState("");
   const [productFilter, setProductFilter] = useState("");
   const [platformFilter, setPlatformFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -226,6 +227,7 @@ export function ChargesView() {
     try {
       const params = new URLSearchParams();
       if (month !== "all") params.set("month", month);
+      if (groupFilter) params.set("group", groupFilter);
       if (productFilter) params.set("product_id", productFilter);
       if (platformFilter) params.set("source_platform", platformFilter);
       if (searchQuery) params.set("search", searchQuery);
@@ -243,7 +245,7 @@ export function ChargesView() {
     } finally {
       setLoading(false);
     }
-  }, [month, productFilter, platformFilter, searchQuery, page]);
+  }, [month, groupFilter, productFilter, platformFilter, searchQuery, page]);
 
   useEffect(() => {
     fetchStats();
@@ -256,7 +258,7 @@ export function ChargesView() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [month, productFilter, platformFilter, searchQuery]);
+  }, [month, groupFilter, productFilter, platformFilter, searchQuery]);
 
   // -------------------------------------------------------------------------
   // Chart data — grouped by product family
@@ -483,6 +485,20 @@ export function ChargesView() {
             {monthOptions.map((o) => (
               <option key={o.value} value={o.value}>
                 {o.label}
+              </option>
+            ))}
+          </select>
+
+          {/* Product family filter */}
+          <select
+            value={groupFilter}
+            onChange={(e) => { setGroupFilter(e.target.value); setProductFilter(""); }}
+            className="rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">All Families</option>
+            {(stats?.top_groups || []).map((g) => (
+              <option key={g.name} value={g.name}>
+                {g.name}
               </option>
             ))}
           </select>
