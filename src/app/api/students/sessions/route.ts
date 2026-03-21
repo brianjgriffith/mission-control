@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/sessions
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
     const sessionType = searchParams.get("session_type");
@@ -87,7 +87,7 @@ const VALID_SESSION_TYPES = ["workshop", "mastermind"];
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateSessionBody;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     if (!body.title || typeof body.title !== "string" || !body.title.trim()) {
       return NextResponse.json(

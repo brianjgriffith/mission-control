@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/calendar/[id]
@@ -36,7 +36,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchBody;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if event exists
     const { data: existing, error: fetchError } = await supabase
@@ -118,7 +118,7 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if event exists
     const { data: existing, error: fetchError } = await supabase

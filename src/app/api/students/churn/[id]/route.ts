@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // PATCH /api/students/churn/[id]
@@ -34,7 +34,7 @@ export async function PATCH(
   try {
     const { id } = await params;
     const body = (await request.json()) as PatchChurnBody;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     const { data: existing, error: fetchError } = await supabase
       .from("churn_events")

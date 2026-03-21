@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // GET /api/financials/sales
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const rep = searchParams.get("rep");
     const product = searchParams.get("product");
@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
     const computedAmount = (body.new_amount ?? 0) + (body.recurring_amount ?? 0) - (body.refund_amount ?? 0);
     const finalAmount = hasSubFields ? computedAmount : body.amount;
 
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     // Check if a record already exists for this rep + month + product
     const { data: existing, error: findError } = await supabase

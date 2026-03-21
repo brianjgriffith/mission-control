@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // GET /api/students/churn
@@ -9,7 +9,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const month = searchParams.get("month");
     const eventType = searchParams.get("event_type");
@@ -76,7 +76,7 @@ const EVENT_TYPE_TO_STATUS: Record<string, string> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     if (!body.student_id || typeof body.student_id !== "string") {
       return NextResponse.json(
@@ -163,7 +163,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");
 

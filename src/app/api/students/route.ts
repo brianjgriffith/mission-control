@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // GET /api/students
@@ -8,7 +8,7 @@ import { createClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
     const program = searchParams.get("program");
     const status = searchParams.get("status");
@@ -71,7 +71,7 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as CreateStudentBody;
-    const supabase = await createClient();
+    const supabase = createAdminClient();
 
     if (!body.name || typeof body.name !== "string" || !body.name.trim()) {
       return NextResponse.json(
