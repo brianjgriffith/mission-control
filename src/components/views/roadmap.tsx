@@ -56,7 +56,7 @@ const phases: Phase[] = [
       { label: "Per-user access overrides — admin can expand or restrict any user's base role", status: "done" },
       { label: "Deploy to Vercel", status: "done" },
       { label: "Migrate existing data to Supabase", status: "done" },
-      { label: "Environment variable setup (HubSpot API key, Supabase creds)", status: "done" },
+      { label: "Environment variable setup — Supabase creds on Vercel", status: "done" },
       { label: "Admin sync health panel — view sync log, surface errors, manual re-trigger per workflow", status: "not_started" },
     ],
   },
@@ -71,6 +71,7 @@ const phases: Phase[] = [
     dependencies: "Phase 0",
     tasks: [
       { label: "DECISION: Charge title parsing approach — Option D (hybrid) selected", status: "done" },
+      { label: "HubSpot API key setup + environment variables on Vercel", status: "not_started" },
       { label: "HubSpot charge sync — webhook + daily schedule", status: "not_started" },
       { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status (dedup via SamCart transaction ID)", status: "not_started" },
       { label: "SamCart subscription event sync — dunning failures, payment retries, pauses (early churn signals)", status: "not_started" },
