@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
 
-    // Build query
+    // Build query — only show meetings assigned to a sales rep
     let query = supabase
       .from("meetings")
       .select(
@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       `,
         { count: "exact" }
       )
+      .not("sales_rep_id", "is", null)
       .order("meeting_date", { ascending: false });
 
     // Filters
@@ -58,7 +59,8 @@ export async function GET(request: NextRequest) {
     // Build outcome summary from a separate count query (avoids pagination limit)
     let summaryQuery = supabase
       .from("meetings")
-      .select("outcome", { count: "exact", head: false });
+      .select("outcome", { count: "exact", head: false })
+      .not("sales_rep_id", "is", null);
 
     if (repId) summaryQuery = summaryQuery.eq("sales_rep_id", repId);
     if (month) {

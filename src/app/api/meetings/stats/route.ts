@@ -24,10 +24,11 @@ export async function GET(request: NextRequest) {
     const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
     const endDate = `${nextMonth}-01T00:00:00Z`;
 
-    // Fetch all meetings for the month (select only needed columns)
+    // Fetch sales-rep meetings for the month (exclude coaching/team meetings)
     const { data: meetings, error } = await supabase
       .from("meetings")
       .select("id, sales_rep_id, outcome")
+      .not("sales_rep_id", "is", null)
       .gte("meeting_date", startDate)
       .lt("meeting_date", endDate)
       .limit(50000);
