@@ -3,8 +3,10 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // ---------------------------------------------------------------------------
 // GET /api/financials/sales
-// Returns rep sales data. Optional filters: ?rep=Name, ?product=elite
-// Includes unique rep names and product names (unfiltered) for UI dropdowns.
+// Returns rep sales data merged from two sources:
+//   1. Automated: charges + charge_attributions (real-time, priority)
+//   2. Manual: rep_sales table (historical, fallback)
+// Automated data takes priority for any rep+month+product that exists.
 // ---------------------------------------------------------------------------
 
 export async function GET(request: NextRequest) {
@@ -14,42 +16,65 @@ export async function GET(request: NextRequest) {
     const rep = searchParams.get("rep");
     const product = searchParams.get("product");
 
-    // Build filtered query
-    let query = supabase
+    // 1. Fetch automated sales from charges + attributions via RPC
+    const { data: autoSalesRaw, error: autoError } = await supabase.rpc(
+      "get_rep_sales_from_charges"
+    );
+    if (autoError) {
+      console.error("[GET /api/financials/sales] RPC error:", autoError.message);
+    }
+
+    const autoSales = (autoSalesRaw || []) as Array<{
+      id: string;
+      rep_name: string;
+      month: string;
+      product: string;
+      amount: number;
+      new_amount: number;
+      recurring_amount: number;
+      deal_count: number;
+      booked_calls: number;
+      refund_amount: number;
+      notes: string;
+      created_at: string;
+      updated_at: string;
+    }>;
+
+    // 2. Fetch manual rep_sales (historical data)
+    const { data: manualSales, error: manualError } = await supabase
       .from("rep_sales")
       .select("*")
       .order("month", { ascending: true })
       .order("rep_name", { ascending: true });
+    if (manualError) throw manualError;
 
-    if (rep) {
-      query = query.eq("rep_name", rep);
-    }
-    if (product) {
-      query = query.eq("product", product);
-    }
+    // 3. Merge: auto takes priority over manual for same rep+month+product
+    // Build a set of keys from automated data
+    const autoKeys = new Set(
+      autoSales.map((s) => `${s.rep_name}|${s.month}|${s.product}`)
+    );
 
-    const { data: sales, error: salesError } = await query;
-    if (salesError) throw salesError;
+    // Include manual entries only if no auto entry exists for that key
+    const manualOnly = (manualSales || []).filter(
+      (s) => !autoKeys.has(`${s.rep_name}|${s.month}|${s.product}`)
+    );
 
-    // Distinct rep names (unfiltered)
-    const { data: repRows, error: repError } = await supabase
-      .from("rep_sales")
-      .select("rep_name")
-      .order("rep_name", { ascending: true });
-    if (repError) throw repError;
+    // Combine and sort
+    const allSales = [...autoSales, ...manualOnly].sort((a, b) => {
+      if (a.month !== b.month) return a.month.localeCompare(b.month);
+      return a.rep_name.localeCompare(b.rep_name);
+    });
 
-    const reps = [...new Set(repRows.map((r) => r.rep_name))];
+    // 4. Apply filters
+    let filtered = allSales;
+    if (rep) filtered = filtered.filter((s) => s.rep_name === rep);
+    if (product) filtered = filtered.filter((s) => s.product === product);
 
-    // Distinct products (unfiltered)
-    const { data: productRows, error: productError } = await supabase
-      .from("rep_sales")
-      .select("product")
-      .order("product", { ascending: true });
-    if (productError) throw productError;
+    // 5. Build distinct lists (from unfiltered combined data)
+    const reps = [...new Set(allSales.map((s) => s.rep_name))].sort();
+    const products = [...new Set(allSales.map((s) => s.product))].sort();
 
-    const products = [...new Set(productRows.map((p) => p.product))];
-
-    return NextResponse.json({ sales, reps, products });
+    return NextResponse.json({ sales: filtered, reps, products });
   } catch (error) {
     console.error("[GET /api/financials/sales]", error);
     return NextResponse.json(
@@ -61,8 +86,8 @@ export async function GET(request: NextRequest) {
 
 // ---------------------------------------------------------------------------
 // POST /api/financials/sales
-// Create or update (upsert) a rep sale record.
-// Body: { rep_name, month, product, amount, deal_count?, notes? }
+// Manual entry — still writes to rep_sales for backward compatibility.
+// In practice, new sales should come through charges + attribution.
 // ---------------------------------------------------------------------------
 
 interface CreateBody {
@@ -107,14 +132,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Auto-compute amount from sub-fields when they're provided
     const hasSubFields = body.new_amount !== undefined || body.recurring_amount !== undefined || body.refund_amount !== undefined;
     const computedAmount = (body.new_amount ?? 0) + (body.recurring_amount ?? 0) - (body.refund_amount ?? 0);
     const finalAmount = hasSubFields ? computedAmount : body.amount;
 
     const supabase = createAdminClient();
 
-    // Check if a record already exists for this rep + month + product
     const { data: existing, error: findError } = await supabase
       .from("rep_sales")
       .select("id")
@@ -125,7 +148,6 @@ export async function POST(request: NextRequest) {
     if (findError) throw findError;
 
     if (existing) {
-      // Update existing
       const { data: sale, error: updateError } = await supabase
         .from("rep_sales")
         .update({
@@ -146,7 +168,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ sale });
     }
 
-    // Create new
     const { data: sale, error: insertError } = await supabase
       .from("rep_sales")
       .insert({
