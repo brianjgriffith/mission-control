@@ -77,7 +77,7 @@ const phases: Phase[] = [
       { label: "Contact sync from HubSpot (64K+ contacts backfilled)", status: "done" },
       { label: "Historical charge backfill (238K charges, 64K contacts from HubSpot)", status: "done" },
       { label: "HubSpot charge sync — daily n8n workflow created, pending activation", status: "in_progress" },
-      { label: "SamCart direct sync — affiliates, payment plans, refunds, subscription status (dedup via SamCart transaction ID)", status: "not_started" },
+      { label: "SamCart direct sync — affiliates, payment plans, subscription status, auto-attribution to sales reps", status: "in_progress" },
       { label: "SamCart subscription event sync — dunning failures, payment retries, pauses (early churn signals)", status: "not_started" },
       { label: "Kajabi sync — evaluate API, direct sync if richer than HubSpot charges", status: "not_started" },
       { label: "Sales attribution — auto from SamCart affiliates", status: "not_started" },

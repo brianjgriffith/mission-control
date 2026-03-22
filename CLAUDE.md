@@ -51,8 +51,9 @@ Migration files live in `supabase/migrations/` and must be manually applied by B
 | 2 | `002_v1_carry_forward_tables.sql` | Adds rep_sales and calendar_events tables for v1 data carry-forward. These are temporary until automated sync replaces them. | APPLIED | 001 | 2026-03-20 |
 | 3 | `003_charge_stats_function.sql` | Adds `get_charge_stats()` RPC function for server-side aggregate computation (avoids 1000-row Supabase limit). | APPLIED | 001 | 2026-03-21 |
 | 4 | `004_product_groups.sql` | Adds `group_name` to products table, assigns product families (VRA, Accelerator, Elite, etc.), updates RPC functions to aggregate by group. | APPLIED | 003 | 2026-03-21 |
-| 5 | `005_unmatched_charges_function.sql` | Adds `get_unmatched_charge_groups()` and `assign_product_to_charges()` RPC functions for unmatched charge management. | PENDING | 001 | 2026-03-21 |
-| 6 | `006_upsert_charge_rpc.sql` | Adds `upsert_charge_from_hubspot()` RPC function for n8n daily sync — finds/creates contact, matches product, upserts charge. | PENDING | 001 | 2026-03-21 |
+| 5 | `005_unmatched_charges_function.sql` | Adds `get_unmatched_charge_groups()` and `assign_product_to_charges()` RPC functions for unmatched charge management. | APPLIED | 001 | 2026-03-21 |
+| 6 | `006_upsert_charge_rpc.sql` | Adds `upsert_charge_from_hubspot()` RPC function for n8n daily sync — finds/creates contact, matches product, upserts charge. | APPLIED | 001 | 2026-03-21 |
+| 7 | `007_upsert_samcart_charge.sql` | Adds `upsert_samcart_charge()` RPC for SamCart webhook sync — enriched data with affiliate, subscription, coupon. Auto-attributes to sales rep. | PENDING | 001 | 2026-03-21 |
 
 **Status values:**
 - `PENDING` — migration file created, waiting for Brian to apply in Supabase
