@@ -51,6 +51,7 @@ interface ChargeAttribution {
 interface SalesRep {
   id: string;
   name: string;
+  rep_type?: string;
 }
 
 interface Charge {
@@ -597,9 +598,24 @@ export function ChargesView() {
             className="rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">All Reps</option>
-            {salesReps.map((r) => (
-              <option key={r.id} value={r.id}>{r.name}</option>
-            ))}
+            {(() => {
+              const sales = salesReps.filter((r) => r.rep_type === "sales" || !r.rep_type);
+              const coaches = salesReps.filter((r) => r.rep_type === "coach");
+              return (
+                <>
+                  {sales.length > 0 && (
+                    <optgroup label="Sales Team">
+                      {sales.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </optgroup>
+                  )}
+                  {coaches.length > 0 && (
+                    <optgroup label="Coaches">
+                      {coaches.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </optgroup>
+                  )}
+                </>
+              );
+            })()}
           </select>
 
           {/* Search */}
@@ -716,9 +732,16 @@ export function ChargesView() {
                                   className="rounded border border-border bg-card/40 px-1.5 py-0.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                                 >
                                   <option value="">None</option>
-                                  {salesReps.map((r) => (
-                                    <option key={r.id} value={r.id}>{r.name}</option>
-                                  ))}
+                                  <optgroup label="Sales Team">
+                                    {salesReps.filter((r) => r.rep_type === "sales" || !r.rep_type).map((r) => (
+                                      <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))}
+                                  </optgroup>
+                                  <optgroup label="Coaches">
+                                    {salesReps.filter((r) => r.rep_type === "coach").map((r) => (
+                                      <option key={r.id} value={r.id}>{r.name}</option>
+                                    ))}
+                                  </optgroup>
                                 </select>
                               );
                             }

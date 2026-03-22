@@ -15,10 +15,12 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const rep = searchParams.get("rep");
     const product = searchParams.get("product");
+    const repType = searchParams.get("rep_type") || "sales"; // 'sales', 'coach', or 'all'
 
     // 1. Fetch automated sales from charges + attributions via RPC
     const { data: autoSalesRaw, error: autoError } = await supabase.rpc(
-      "get_rep_sales_from_charges"
+      "get_rep_sales_from_charges",
+      { filter_rep_type: repType === "all" ? null : repType }
     );
     if (autoError) {
       console.error("[GET /api/financials/sales] RPC error:", autoError.message);

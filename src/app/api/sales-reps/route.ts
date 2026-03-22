@@ -6,8 +6,9 @@ export async function GET() {
     const supabase = createAdminClient();
     const { data, error } = await supabase
       .from("sales_reps")
-      .select("id, name, email, is_active")
+      .select("id, name, email, rep_type, is_active")
       .eq("is_active", true)
+      .order("rep_type")
       .order("name");
 
     if (error) throw error;
