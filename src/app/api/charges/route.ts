@@ -16,9 +16,20 @@ export async function GET(request: NextRequest) {
     const productId = searchParams.get("product_id");
     const groupName = searchParams.get("group"); // product family filter
     const sourcePlatform = searchParams.get("source_platform");
+    const repId = searchParams.get("rep_id"); // sales rep attribution filter
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
+
+    // If filtering by rep, get charge IDs attributed to that rep
+    let repChargeIds: string[] | null = null;
+    if (repId) {
+      const { data: attrData } = await supabase
+        .from("charge_attributions")
+        .select("charge_id")
+        .eq("sales_rep_id", repId);
+      repChargeIds = (attrData || []).map((a) => a.charge_id);
+    }
 
     // If filtering by group, first get the product IDs in that group
     let groupProductIds: string[] | null = null;
@@ -70,6 +81,17 @@ export async function GET(request: NextRequest) {
     }
     if (sourcePlatform) {
       query = query.eq("source_platform", sourcePlatform);
+    }
+    if (repChargeIds !== null) {
+      if (repChargeIds.length === 0) {
+        // Rep has no attributed charges — return empty
+        return NextResponse.json({
+          charges: [],
+          pagination: { page, per_page: perPage, total: 0, total_pages: 0 },
+          summary: { total_revenue: 0, total_charges: 0, by_group: {}, by_product: {}, by_platform: {} },
+        });
+      }
+      query = query.in("id", repChargeIds);
     }
     if (search) {
       query = query.or(

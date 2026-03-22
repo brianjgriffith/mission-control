@@ -223,6 +223,7 @@ export function ChargesView() {
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [attributingChargeId, setAttributingChargeId] = useState<string | null>(null);
+  const [repFilter, setRepFilter] = useState("");
 
   // -------------------------------------------------------------------------
   // Fetch stats (chart data)
@@ -252,6 +253,7 @@ export function ChargesView() {
       if (groupFilter) params.set("group", groupFilter);
       if (productFilter) params.set("product_id", productFilter);
       if (platformFilter) params.set("source_platform", platformFilter);
+      if (repFilter) params.set("rep_id", repFilter);
       if (searchQuery) params.set("search", searchQuery);
       params.set("page", String(page));
       params.set("per_page", "50");
@@ -267,7 +269,7 @@ export function ChargesView() {
     } finally {
       setLoading(false);
     }
-  }, [month, groupFilter, productFilter, platformFilter, searchQuery, page]);
+  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery, page]);
 
   // Fetch sales reps for attribution dropdown
   useEffect(() => {
@@ -306,7 +308,7 @@ export function ChargesView() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [month, groupFilter, productFilter, platformFilter, searchQuery]);
+  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery]);
 
   // -------------------------------------------------------------------------
   // Chart data — grouped by product family
@@ -586,6 +588,18 @@ export function ChargesView() {
             <option value="hubspot_payments">HubSpot Payments</option>
             <option value="samcart">SamCart</option>
             <option value="kajabi">Kajabi</option>
+          </select>
+
+          {/* Sales Rep filter */}
+          <select
+            value={repFilter}
+            onChange={(e) => setRepFilter(e.target.value)}
+            className="rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+          >
+            <option value="">All Reps</option>
+            {salesReps.map((r) => (
+              <option key={r.id} value={r.id}>{r.name}</option>
+            ))}
           </select>
 
           {/* Search */}
