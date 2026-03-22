@@ -50,19 +50,25 @@ export async function GET(request: NextRequest) {
       .order("rep_name", { ascending: true });
     if (manualError) throw manualError;
 
-    // 3. Merge: auto takes priority over manual for same rep+month+product
-    // Build a set of keys from automated data
+    // 3. Merge: auto takes priority over manual ONLY from March 2026 onward.
+    // Before that, manual data is authoritative (hand-entered historical data).
+    const AUTO_START_MONTH = "2026-03";
+
+    // Only use auto data for months >= March 2026
+    const autoFiltered = autoSales.filter((s) => s.month >= AUTO_START_MONTH);
+
+    // Build a set of keys from auto data (March 2026+)
     const autoKeys = new Set(
-      autoSales.map((s) => `${s.rep_name}|${s.month}|${s.product}`)
+      autoFiltered.map((s) => `${s.rep_name}|${s.month}|${s.product}`)
     );
 
-    // Include manual entries only if no auto entry exists for that key
+    // Include manual entries if: before March 2026, OR no auto entry exists
     const manualOnly = (manualSales || []).filter(
-      (s) => !autoKeys.has(`${s.rep_name}|${s.month}|${s.product}`)
+      (s) => s.month < AUTO_START_MONTH || !autoKeys.has(`${s.rep_name}|${s.month}|${s.product}`)
     );
 
     // Combine and sort
-    const allSales = [...autoSales, ...manualOnly].sort((a, b) => {
+    const allSales = [...autoFiltered, ...manualOnly].sort((a, b) => {
       if (a.month !== b.month) return a.month.localeCompare(b.month);
       return a.rep_name.localeCompare(b.rep_name);
     });

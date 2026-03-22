@@ -63,7 +63,7 @@ interface Charge {
   payment_plan_type: string;
   contacts: ChargeContact | null;
   products: ChargeProduct | null;
-  charge_attributions: ChargeAttribution[] | null;
+  charge_attributions: ChargeAttribution | ChargeAttribution[] | null;
 }
 
 interface Pagination {
@@ -715,7 +715,8 @@ export function ChargesView() {
                         </td>
                         <td className="px-3 py-2.5 text-xs">
                           {(() => {
-                            const attr = charge.charge_attributions?.[0];
+                            const attrRaw = charge.charge_attributions;
+                            const attr = Array.isArray(attrRaw) ? attrRaw[0] : attrRaw;
                             const repName = attr?.sales_reps?.name;
                             const isAttributing = attributingChargeId === charge.id;
 
