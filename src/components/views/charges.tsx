@@ -41,6 +41,18 @@ interface ChargeProduct {
   program: string;
 }
 
+interface ChargeAttribution {
+  id: string;
+  sales_rep_id: string;
+  attribution_type: string;
+  sales_reps: { id: string; name: string } | null;
+}
+
+interface SalesRep {
+  id: string;
+  name: string;
+}
+
 interface Charge {
   id: string;
   amount: number;
@@ -50,6 +62,7 @@ interface Charge {
   payment_plan_type: string;
   contacts: ChargeContact | null;
   products: ChargeProduct | null;
+  charge_attributions: ChargeAttribution[] | null;
 }
 
 interface Pagination {
@@ -208,6 +221,8 @@ export function ChargesView() {
   const [page, setPage] = useState(1);
   const [unmatchedOpen, setUnmatchedOpen] = useState(false);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [attributingChargeId, setAttributingChargeId] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Fetch stats (chart data)
@@ -254,6 +269,14 @@ export function ChargesView() {
     }
   }, [month, groupFilter, productFilter, platformFilter, searchQuery, page]);
 
+  // Fetch sales reps for attribution dropdown
+  useEffect(() => {
+    fetch("/api/sales-reps")
+      .then((r) => r.json())
+      .then((j) => setSalesReps(j.reps || []))
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     fetchStats();
   }, [fetchStats]);
@@ -261,6 +284,24 @@ export function ChargesView() {
   useEffect(() => {
     fetchCharges();
   }, [fetchCharges]);
+
+  // Handle attribution
+  const handleAttribute = useCallback(
+    async (chargeId: string, salesRepId: string | null) => {
+      try {
+        await fetch(`/api/charges/${chargeId}/attribute`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sales_rep_id: salesRepId }),
+        });
+        setAttributingChargeId(null);
+        fetchCharges();
+      } catch (err) {
+        console.error("[ChargesView] attribute:", err);
+      }
+    },
+    [fetchCharges]
+  );
 
   // Reset page when filters change
   useEffect(() => {
@@ -591,6 +632,9 @@ export function ChargesView() {
                       Platform
                     </th>
                     <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                      Sales Rep
+                    </th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                       Payment Type
                     </th>
                   </tr>
@@ -638,6 +682,54 @@ export function ChargesView() {
                           >
                             {platform.label}
                           </span>
+                        </td>
+                        <td className="px-3 py-2.5 text-xs">
+                          {(() => {
+                            const attr = charge.charge_attributions?.[0];
+                            const repName = attr?.sales_reps?.name;
+                            const isAttributing = attributingChargeId === charge.id;
+
+                            if (isAttributing) {
+                              return (
+                                <select
+                                  autoFocus
+                                  defaultValue={attr?.sales_rep_id || ""}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+                                    handleAttribute(charge.id, val || null);
+                                  }}
+                                  onBlur={() => setAttributingChargeId(null)}
+                                  className="rounded border border-border bg-card/40 px-1.5 py-0.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+                                >
+                                  <option value="">None</option>
+                                  {salesReps.map((r) => (
+                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                  ))}
+                                </select>
+                              );
+                            }
+
+                            if (repName) {
+                              return (
+                                <button
+                                  onClick={() => setAttributingChargeId(charge.id)}
+                                  className="text-foreground hover:text-primary hover:underline"
+                                  title={`${attr?.attribution_type} attribution — click to change`}
+                                >
+                                  {repName}
+                                </button>
+                              );
+                            }
+
+                            return (
+                              <button
+                                onClick={() => setAttributingChargeId(charge.id)}
+                                className="text-muted-foreground/40 hover:text-primary text-[10px]"
+                              >
+                                + Assign
+                              </button>
+                            );
+                          })()}
                         </td>
                         <td className="px-3 py-2.5 text-xs capitalize text-muted-foreground">
                           {charge.payment_plan_type?.replace(/_/g, " ") ?? "—"}

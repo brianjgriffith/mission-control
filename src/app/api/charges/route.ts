@@ -35,14 +35,15 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Build query
+    // Build query — include attribution + sales rep via join
     let query = supabase
       .from("charges")
       .select(
         `
         *,
         contacts (id, hubspot_contact_id, email, first_name, last_name, full_name),
-        products (id, name, short_name, product_type, program)
+        products (id, name, short_name, product_type, program),
+        charge_attributions (id, sales_rep_id, attribution_type, sales_reps (id, name))
       `,
         { count: "exact" }
       )
