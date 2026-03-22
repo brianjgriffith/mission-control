@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type RepQuota, type Deal } from "@/lib/types";
+import { RepChargesModal } from "@/components/rep-charges-modal";
 import {
   Plus,
   ArrowUpRight,
@@ -1213,6 +1214,25 @@ export function SalesView() {
   const [showHighlights, setShowHighlights] = useState(true);
   const [quotas, setQuotas] = useState<RepQuota[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
+  const [drillDownRep, setDrillDownRep] = useState<{ id: string; name: string; month?: string } | null>(null);
+  const [repIdMap, setRepIdMap] = useState<Record<string, string>>({});
+
+  // Fetch sales rep IDs for drill-down
+  useEffect(() => {
+    fetch("/api/sales-reps")
+      .then((r) => r.json())
+      .then((j) => {
+        const map: Record<string, string> = {};
+        for (const r of j.reps || []) map[r.name] = r.id;
+        setRepIdMap(map);
+      })
+      .catch(() => {});
+  }, []);
+
+  const openDrillDown = useCallback((repName: string, month?: string) => {
+    const id = repIdMap[repName];
+    if (id) setDrillDownRep({ id, name: repName, month });
+  }, [repIdMap]);
 
   const fetchSales = useCallback(async () => {
     try {
@@ -2511,6 +2531,12 @@ export function SalesView() {
                           <span className="text-[10px] text-muted-foreground/50">{rt.deals} new deal{rt.deals !== 1 ? "s" : ""}</span>
                           <span className="text-[10px] text-muted-foreground/50">avg {fmtMoney(rt.avg)}/mo</span>
                           <span className="font-mono text-sm font-semibold text-foreground">{fmtMoney(rt.total)}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openDrillDown(rt.name); }}
+                            className="text-[10px] text-primary/60 hover:text-primary hover:underline"
+                          >
+                            View
+                          </button>
                         </div>
                       </div>
                       <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
@@ -2868,6 +2894,16 @@ export function SalesView() {
         </div>
         </>)}
       </div>
+
+      {/* Rep Charges Drill-Down Modal */}
+      {drillDownRep && (
+        <RepChargesModal
+          repId={drillDownRep.id}
+          repName={drillDownRep.name}
+          month={drillDownRep.month}
+          onClose={() => setDrillDownRep(null)}
+        />
+      )}
     </div>
   );
 }
