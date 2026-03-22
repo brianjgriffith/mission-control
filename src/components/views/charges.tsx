@@ -152,6 +152,7 @@ const PLATFORM_STYLES: Record<string, { label: string; bg: string; text: string 
   samcart: { label: "SamCart", bg: "bg-blue-500/15", text: "text-blue-400" },
   kajabi: { label: "Kajabi", bg: "bg-purple-500/15", text: "text-purple-400" },
   hubspot: { label: "HubSpot", bg: "bg-amber-500/15", text: "text-amber-400" },
+  hubspot_payments: { label: "HS Payments", bg: "bg-emerald-500/15", text: "text-emerald-400" },
 };
 
 function getPlatformStyle(platform: string) {
@@ -540,7 +541,8 @@ export function ChargesView() {
             className="rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
           >
             <option value="">All Platforms</option>
-            <option value="hubspot">HubSpot</option>
+            <option value="hubspot">HubSpot Charges</option>
+            <option value="hubspot_payments">HubSpot Payments</option>
             <option value="samcart">SamCart</option>
             <option value="kajabi">Kajabi</option>
           </select>
