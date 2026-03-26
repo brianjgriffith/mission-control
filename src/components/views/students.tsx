@@ -84,7 +84,9 @@ import {
   Mail,
   Calendar,
   CreditCard,
+  ShieldAlert,
 } from "lucide-react";
+import { EnrollmentQuality } from "@/components/enrollment-quality";
 import { format, parseISO, subMonths } from "date-fns";
 import {
   BarChart,
@@ -266,21 +268,48 @@ function MetricCard({
 
 export function StudentsView() {
   const [activeTab, setActiveTab] = useState<StudentTab>("roster");
+  const [qualityPanelOpen, setQualityPanelOpen] = useState(false);
+  const [qualityCount, setQualityCount] = useState(0);
+
+  // Fetch data quality count on mount
+  useEffect(() => {
+    fetch("/api/students/data-quality")
+      .then((r) => r.json())
+      .then((d) => {
+        const count =
+          (d.pending_cancellations?.length || 0) +
+          (d.unclassified?.length || 0) +
+          (d.status_mismatches?.length || 0);
+        setQualityCount(count);
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-6 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {activeTab === "roster" && "Student roster & management"}
-            {activeTab === "coaches" && "Coach breakdown & performance"}
-            {activeTab === "churn" && "Monthly churn tracking"}
-            {activeTab === "attendance" && "Elite session attendance"}
-            {activeTab === "capacity" && "Capacity planning & hire forecasting"}
-            {activeTab === "revenue" && "MRR trends, projections & scenario modeling"}
-          </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Students</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {activeTab === "roster" && "Student roster & management"}
+              {activeTab === "coaches" && "Coach breakdown & performance"}
+              {activeTab === "churn" && "Monthly churn tracking"}
+              {activeTab === "attendance" && "Elite session attendance"}
+              {activeTab === "capacity" && "Capacity planning & hire forecasting"}
+              {activeTab === "revenue" && "MRR trends, projections & scenario modeling"}
+            </p>
+          </div>
+          {qualityCount > 0 && (
+            <button
+              onClick={() => setQualityPanelOpen(true)}
+              className="flex items-center gap-1.5 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-400 transition-colors hover:bg-amber-500/20"
+            >
+              <ShieldAlert className="h-3.5 w-3.5" />
+              {qualityCount} data quality {qualityCount === 1 ? "item" : "items"}
+            </button>
+          )}
         </div>
 
         {/* Tabs */}
@@ -314,6 +343,25 @@ export function StudentsView() {
         {activeTab === "capacity" && <CapacityTab />}
         {activeTab === "revenue" && <RevenueTab />}
       </div>
+
+      {/* Enrollment Data Quality Panel */}
+      <EnrollmentQuality
+        open={qualityPanelOpen}
+        onClose={() => setQualityPanelOpen(false)}
+        onUpdated={() => {
+          // Re-fetch quality count
+          fetch("/api/students/data-quality")
+            .then((r) => r.json())
+            .then((d) => {
+              const count =
+                (d.pending_cancellations?.length || 0) +
+                (d.unclassified?.length || 0) +
+                (d.status_mismatches?.length || 0);
+              setQualityCount(count);
+            })
+            .catch(() => {});
+        }}
+      />
     </div>
   );
 }
