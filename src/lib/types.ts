@@ -252,6 +252,7 @@ export const PAYMENT_PLAN_CONFIG: Record<string, { label: string; shortLabel: st
 
 export interface Student {
   id: string;
+  contact_id: string | null;
   name: string;
   email: string;
   youtube_channel: string;

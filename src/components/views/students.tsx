@@ -909,17 +909,50 @@ interface StudentDetailDrawerProps {
   onEdit: (student: Student) => void;
 }
 
+interface ContactMeeting {
+  id: string;
+  title: string;
+  meeting_date: string;
+  duration_minutes: number;
+  outcome: string;
+  outcome_notes: string;
+  sales_reps: { name: string } | null;
+}
+
+interface ContactCharge {
+  id: string;
+  amount: number;
+  charge_date: string;
+  source_platform: string;
+  products: { short_name: string; name: string } | null;
+}
+
+const OUTCOME_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  pending:       { bg: "bg-zinc-500/15",   text: "text-zinc-400",   label: "Pending" },
+  completed:     { bg: "bg-blue-500/15",   text: "text-blue-400",   label: "Completed" },
+  no_show:       { bg: "bg-red-500/15",    text: "text-red-400",    label: "No Show" },
+  rescheduled:   { bg: "bg-amber-500/15",  text: "text-amber-400",  label: "Rescheduled" },
+  not_qualified: { bg: "bg-orange-500/15", text: "text-orange-400", label: "Not Qualified" },
+  lead:          { bg: "bg-cyan-500/15",   text: "text-cyan-400",   label: "Lead" },
+  sold:          { bg: "bg-green-500/15",  text: "text-green-400",  label: "Sold" },
+};
+
 function StudentDetailDrawer({ studentId, onClose, students, onEdit }: StudentDetailDrawerProps) {
   const student = studentId ? students.find((s) => s.id === studentId) : null;
   const [churnEvents, setChurnEvents] = useState<ChurnEvent[]>([]);
   const [attendedSessions, setAttendedSessions] = useState<{ id: string; title: string; session_type: string; session_date: string }[]>([]);
+  const [contactMeetings, setContactMeetings] = useState<ContactMeeting[]>([]);
+  const [contactCharges, setContactCharges] = useState<ContactCharge[]>([]);
   const [loadingChurn, setLoadingChurn] = useState(false);
   const [loadingAttendance, setLoadingAttendance] = useState(false);
+  const [loadingContact, setLoadingContact] = useState(false);
 
   useEffect(() => {
     if (!studentId) {
       setChurnEvents([]);
       setAttendedSessions([]);
+      setContactMeetings([]);
+      setContactCharges([]);
       return;
     }
 
@@ -938,6 +971,29 @@ function StudentDetailDrawer({ studentId, onClose, students, onEdit }: StudentDe
       .catch(() => setAttendedSessions([]))
       .finally(() => setLoadingAttendance(false));
   }, [studentId]);
+
+  // Fetch meetings and charges via the contact API when student has a contact_id
+  useEffect(() => {
+    const contactId = student?.contact_id;
+    if (!contactId) {
+      setContactMeetings([]);
+      setContactCharges([]);
+      return;
+    }
+
+    setLoadingContact(true);
+    fetch(`/api/contacts/${contactId}`)
+      .then((r) => r.json())
+      .then((j) => {
+        setContactMeetings(j.meetings ?? []);
+        setContactCharges(j.charges ?? []);
+      })
+      .catch(() => {
+        setContactMeetings([]);
+        setContactCharges([]);
+      })
+      .finally(() => setLoadingContact(false));
+  }, [student?.contact_id]);
 
   const tenure = useMemo(() => {
     if (!student?.signup_date) return null;
@@ -1091,6 +1147,90 @@ function StudentDetailDrawer({ studentId, onClose, students, onEdit }: StudentDe
                   {attendedSessions.length > 10 && (
                     <p className="text-[10px] text-muted-foreground/50 text-center">
                       +{attendedSessions.length - 10} more
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Meetings (from contact) */}
+            <div className="px-4">
+              <h3 className="mb-2 text-xs font-semibold">
+                Meetings
+                {!loadingContact && contactMeetings.length > 0 && (
+                  <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                    {contactMeetings.length}
+                  </span>
+                )}
+              </h3>
+              {loadingContact ? (
+                <p className="text-[10px] text-muted-foreground">Loading...</p>
+              ) : !student.contact_id ? (
+                <p className="text-[10px] text-muted-foreground/50">No linked contact</p>
+              ) : contactMeetings.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground/50">No meetings</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {contactMeetings.slice(0, 10).map((mtg) => {
+                    const oc = OUTCOME_BADGE[mtg.outcome] || { bg: "bg-muted", text: "text-muted-foreground", label: mtg.outcome };
+                    return (
+                      <div key={mtg.id} className="rounded-md border border-border/20 bg-card/20 px-2.5 py-1.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[11px] font-medium truncate">{mtg.title || "Meeting"}</span>
+                          <span className={cn("shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium", oc.bg, oc.text)}>
+                            {oc.label}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground">
+                          <span>{formatDate(mtg.meeting_date)}</span>
+                          {mtg.sales_reps?.name && <span>with {mtg.sales_reps.name}</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {contactMeetings.length > 10 && (
+                    <p className="text-[10px] text-muted-foreground/50 text-center">
+                      +{contactMeetings.length - 10} more
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Transaction History (from contact) */}
+            <div className="px-4">
+              <h3 className="mb-2 text-xs font-semibold">
+                Transactions
+                {!loadingContact && contactCharges.length > 0 && (
+                  <span className="ml-2 text-[10px] font-normal text-muted-foreground">
+                    {contactCharges.length} &middot; {fmtMoney(contactCharges.reduce((s, c) => s + (Number(c.amount) || 0), 0))}
+                  </span>
+                )}
+              </h3>
+              {loadingContact ? (
+                <p className="text-[10px] text-muted-foreground">Loading...</p>
+              ) : !student.contact_id ? (
+                <p className="text-[10px] text-muted-foreground/50">No linked contact</p>
+              ) : contactCharges.length === 0 ? (
+                <p className="text-[10px] text-muted-foreground/50">No transactions</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {contactCharges.slice(0, 15).map((charge) => (
+                    <div key={charge.id} className="flex items-center justify-between rounded-md border border-border/20 bg-card/20 px-2.5 py-1.5">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-[11px] font-medium truncate block">
+                          {charge.products?.short_name || charge.products?.name || "Unknown"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground">{formatDate(charge.charge_date)}</span>
+                      </div>
+                      <span className="text-[11px] font-mono font-semibold shrink-0 ml-2">
+                        {fmtMoney(Number(charge.amount))}
+                      </span>
+                    </div>
+                  ))}
+                  {contactCharges.length > 15 && (
+                    <p className="text-[10px] text-muted-foreground/50 text-center">
+                      +{contactCharges.length - 15} more
                     </p>
                   )}
                 </div>
