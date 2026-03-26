@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUser } from "@/lib/auth";
+import { getSalesRepScope } from "@/lib/sales-rep-scope";
 
 // ---------------------------------------------------------------------------
 // GET /api/financials/sales
@@ -12,8 +14,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 export async function GET(request: NextRequest) {
   try {
     const supabase = createAdminClient();
+
+    // Sales rep scoping: restrict to own data only
+    const user = await getAuthUser();
+    let scopedRepName: string | null = null;
+    if (user) {
+      const scopedRepId = await getSalesRepScope(user);
+      if (scopedRepId) {
+        const { data: repRow } = await supabase
+          .from("sales_reps")
+          .select("name")
+          .eq("id", scopedRepId)
+          .single();
+        scopedRepName = repRow?.name ?? null;
+      }
+    }
+
     const { searchParams } = new URL(request.url);
-    const rep = searchParams.get("rep");
+    const rep = scopedRepName || searchParams.get("rep");
     const product = searchParams.get("product");
     const repType = searchParams.get("rep_type") || "sales"; // 'sales', 'coach', or 'all'
 

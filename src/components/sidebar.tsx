@@ -47,6 +47,7 @@ import { cn } from "@/lib/utils";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import type { View, Project } from "@/lib/types";
+import type { user_role } from "@/lib/supabase/types";
 
 interface SidebarProps {
   activeView: View;
@@ -83,6 +84,16 @@ const SECONDARY_ITEMS = [
   { id: "sync_health" as const, label: "Sync Health", icon: Activity },
   { id: "settings" as const, label: "Settings", icon: Settings },
 ];
+
+// Views allowed per role. If a role is not listed, all views are shown.
+const ROLE_ALLOWED_VIEWS: Partial<Record<user_role, Set<View>>> = {
+  sales_rep: new Set(["dashboard", "sales", "meetings", "charges"] as View[]),
+};
+
+// Secondary items allowed per role (by id). Omit role = show all.
+const ROLE_ALLOWED_SECONDARY: Partial<Record<user_role, Set<string>>> = {
+  sales_rep: new Set<string>(), // none
+};
 
 const ICON_MAP: Record<string, typeof LayoutDashboard> = {
   Bot,
@@ -178,6 +189,18 @@ export function Sidebar({
 }: SidebarProps) {
   const activeProjects = projects.filter((p) => p.status === "active");
 
+  // Filter nav items based on role
+  const role = userRole as user_role | undefined;
+  const allowedViews = role ? ROLE_ALLOWED_VIEWS[role] : undefined;
+  const allowedSecondary = role ? ROLE_ALLOWED_SECONDARY[role] : undefined;
+  const filteredNav = allowedViews
+    ? GLOBAL_NAV.filter((item) => allowedViews.has(item.id))
+    : GLOBAL_NAV;
+  const filteredSecondary = allowedSecondary !== undefined
+    ? SECONDARY_ITEMS.filter((item) => allowedSecondary.has(item.id))
+    : SECONDARY_ITEMS;
+  const showProjects = !allowedViews; // hide projects section for scoped roles
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -225,7 +248,7 @@ export function Sidebar({
 
       {/* Global Navigation */}
       <nav className="flex flex-col gap-1 p-2">
-        {GLOBAL_NAV.map((item) => {
+        {filteredNav.map((item) => {
           const Icon = item.icon;
           const isActive =
             activeView === item.id && activeProjectId === null;
@@ -271,10 +294,10 @@ export function Sidebar({
         })}
       </nav>
 
-      <Separator className="mx-2 bg-sidebar-border" />
+      {showProjects && <Separator className="mx-2 bg-sidebar-border" />}
 
       {/* Projects Section */}
-      <div className="flex min-h-0 flex-1 flex-col">
+      <div className={cn("flex min-h-0 flex-1 flex-col", !showProjects && "hidden")}>
         {!collapsed && (
           <div className="flex items-center justify-between px-4 py-2">
             <span className="text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
@@ -366,11 +389,12 @@ export function Sidebar({
         </div>
       </div>
 
-      <Separator className="mx-2 bg-sidebar-border" />
+      {filteredSecondary.length > 0 && <Separator className="mx-2 bg-sidebar-border" />}
 
       {/* Secondary Nav */}
+      {filteredSecondary.length > 0 && (
       <nav className="flex flex-col gap-1 p-2">
-        {SECONDARY_ITEMS.map((item) => {
+        {filteredSecondary.map((item) => {
           const Icon = item.icon;
           const isActive =
             (item.id === "archive" && activeView === "archive" && activeProjectId === null) ||
@@ -407,6 +431,7 @@ export function Sidebar({
           return button;
         })}
       </nav>
+      )}
 
       {/* User / Sign Out */}
       {userName && (

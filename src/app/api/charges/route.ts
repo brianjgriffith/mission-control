@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUser } from "@/lib/auth";
+import { getSalesRepScope } from "@/lib/sales-rep-scope";
 
 // ---------------------------------------------------------------------------
 // GET /api/charges
@@ -12,11 +14,18 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
+    // Sales rep scoping: force filter to own rep ID
+    const user = await getAuthUser();
+    let scopedRepId: string | null = null;
+    if (user) {
+      scopedRepId = await getSalesRepScope(user);
+    }
+
     const month = searchParams.get("month"); // YYYY-MM
     const productId = searchParams.get("product_id");
     const groupName = searchParams.get("group"); // product family filter
     const sourcePlatform = searchParams.get("source_platform");
-    const repId = searchParams.get("rep_id"); // sales rep attribution filter
+    const repId = scopedRepId || searchParams.get("rep_id"); // sales rep attribution filter
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);

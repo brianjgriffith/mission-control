@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getAuthUser } from "@/lib/auth";
+import { getSalesRepScope } from "@/lib/sales-rep-scope";
 
 // ---------------------------------------------------------------------------
 // GET /api/meetings
@@ -12,7 +14,14 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
-    let resolvedRepId = searchParams.get("rep_id");
+    // Sales rep scoping: force filter to own rep ID
+    const user = await getAuthUser();
+    let scopedRepId: string | null = null;
+    if (user) {
+      scopedRepId = await getSalesRepScope(user);
+    }
+
+    let resolvedRepId = scopedRepId || searchParams.get("rep_id");
     const repName = searchParams.get("rep_name");
     const month = searchParams.get("month"); // YYYY-MM
     const startDate = searchParams.get("start_date"); // YYYY-MM-DD
