@@ -42,7 +42,60 @@ export async function GET(request: NextRequest) {
       updated_at: string;
     }>;
 
-    // 2. Fetch manual rep_sales (historical data)
+    // 2. Enrich auto sales with real meeting counts from the meetings table.
+    //    Count meetings per sales_rep per month, excluding no_show and rescheduled.
+    //    Also count "sold" outcomes separately for close rate.
+    if (autoSales.length > 0) {
+      // Get all sales rep IDs and their names
+      const { data: repsData } = await supabase
+        .from("sales_reps")
+        .select("id, name")
+        .eq("is_active", true);
+
+      if (repsData && repsData.length > 0) {
+        const repNameToId = new Map<string, string>();
+        for (const r of repsData) repNameToId.set(r.name, r.id);
+
+        // Fetch all meetings with a sales rep (we only need rep_id, date, outcome)
+        const { data: allMeetings } = await supabase
+          .from("meetings")
+          .select("sales_rep_id, meeting_date, outcome")
+          .not("sales_rep_id", "is", null)
+          .limit(50000);
+
+        if (allMeetings && allMeetings.length > 0) {
+          // Build a map: repId|month → { total (excl no_show/rescheduled), sold }
+          const meetingCounts = new Map<string, { total: number; sold: number }>();
+
+          for (const mtg of allMeetings) {
+            const outcome = mtg.outcome || "pending";
+            // Skip no-shows and rescheduled — they don't count as "real" meetings
+            if (outcome === "no_show" || outcome === "rescheduled") continue;
+
+            const mtgMonth = mtg.meeting_date?.slice(0, 7); // YYYY-MM
+            if (!mtgMonth) continue;
+
+            const key = `${mtg.sales_rep_id}|${mtgMonth}`;
+            const existing = meetingCounts.get(key) || { total: 0, sold: 0 };
+            existing.total++;
+            if (outcome === "sold") existing.sold++;
+            meetingCounts.set(key, existing);
+          }
+
+          // Inject into auto sales
+          for (const sale of autoSales) {
+            const repId = repNameToId.get(sale.rep_name);
+            if (!repId) continue;
+            const counts = meetingCounts.get(`${repId}|${sale.month}`);
+            if (counts) {
+              sale.booked_calls = counts.total;
+            }
+          }
+        }
+      }
+    }
+
+    // 3. Fetch manual rep_sales (historical data)
     const { data: manualSales, error: manualError } = await supabase
       .from("rep_sales")
       .select("*")
@@ -50,7 +103,7 @@ export async function GET(request: NextRequest) {
       .order("rep_name", { ascending: true });
     if (manualError) throw manualError;
 
-    // 3. Merge: auto takes priority over manual ONLY from March 2026 onward.
+    // 4. Merge: auto takes priority over manual ONLY from March 2026 onward.
     // Before that, manual data is authoritative (hand-entered historical data).
     const AUTO_START_MONTH = "2026-03";
 
@@ -73,12 +126,12 @@ export async function GET(request: NextRequest) {
       return a.rep_name.localeCompare(b.rep_name);
     });
 
-    // 4. Apply filters
+    // 5. Apply filters
     let filtered = allSales;
     if (rep) filtered = filtered.filter((s) => s.rep_name === rep);
     if (product) filtered = filtered.filter((s) => s.product === product);
 
-    // 5. Build distinct lists (from unfiltered combined data)
+    // 6. Build distinct lists (from unfiltered combined data)
     const reps = [...new Set(allSales.map((s) => s.rep_name))].sort();
     const products = [...new Set(allSales.map((s) => s.product))].sort();
 
