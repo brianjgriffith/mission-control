@@ -35,6 +35,7 @@ interface SyncStudentBody {
   // Partner detection
   is_partner?: boolean;
   linked_student_email?: string; // Email of the student this partner is linked to
+  partner_email?: string; // If this STUDENT has a partner, this is the partner's email
 
   // Optional charge info
   charge_amount?: number;
@@ -205,7 +206,68 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // --- 6. Return student for downstream use ---
+    // --- 6. Auto-create partner if partner_email is provided ---
+    let partnerCreated = false;
+    if (body.partner_email && body.partner_email.trim() && student) {
+      const partnerEmail = body.partner_email.trim().toLowerCase();
+
+      // Check if partner already exists
+      const { data: existingPartnerRecord } = await supabase
+        .from("students")
+        .select("id, member_type, linked_student_id")
+        .eq("email", partnerEmail)
+        .eq("program", program)
+        .maybeSingle();
+
+      if (existingPartnerRecord) {
+        // Update to partner if not already
+        if (
+          existingPartnerRecord.member_type !== "partner" ||
+          existingPartnerRecord.linked_student_id !== student.id
+        ) {
+          await supabase
+            .from("students")
+            .update({
+              member_type: "partner",
+              linked_student_id: student.id,
+              classification_source: "hubspot_partner_form",
+              updated_at: new Date().toISOString(),
+            })
+            .eq("id", existingPartnerRecord.id);
+          partnerCreated = true;
+        }
+      } else {
+        // Find or create contact for partner
+        let partnerContactId: string | null = null;
+        const { data: partnerContact } = await supabase
+          .from("contacts")
+          .select("id")
+          .eq("email", partnerEmail)
+          .maybeSingle();
+
+        if (partnerContact) {
+          partnerContactId = partnerContact.id;
+        }
+
+        // Create partner student record
+        await supabase.from("students").insert({
+          contact_id: partnerContactId,
+          name: partnerEmail.split("@")[0],
+          email: partnerEmail,
+          program,
+          status: "active",
+          member_type: "partner",
+          linked_student_id: student.id,
+          signup_date: signupDate,
+          monthly_revenue: 0,
+          classification_source: "hubspot_partner_form",
+          hubspot_segment: "ACTIVE: VRA Accelerator",
+        });
+        partnerCreated = true;
+      }
+    }
+
+    // --- 7. Return student for downstream use ---
     return NextResponse.json(
       {
         student,
@@ -213,6 +275,7 @@ export async function POST(request: NextRequest) {
         youtube_channel_normalized: youtubeChannel,
         is_new: !existingStudent,
         member_type: memberType,
+        partner_created: partnerCreated,
       },
       { status: existingStudent ? 200 : 201 }
     );
