@@ -249,6 +249,9 @@ export function MeetingsView() {
 
   // Filter state
   const [month, setMonth] = useState(getCurrentMonth());
+  const [dateMode, setDateMode] = useState<"month" | "custom">("month");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd] = useState("");
   const [repFilter, setRepFilter] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState("");
   const [page, setPage] = useState(1);
@@ -259,7 +262,14 @@ export function MeetingsView() {
   const fetchStats = useCallback(async () => {
     setStatsLoading(true);
     try {
-      const res = await fetch(`/api/meetings/stats?month=${month}`);
+      const params = new URLSearchParams();
+      if (dateMode === "custom" && customStart && customEnd) {
+        params.set("start_date", customStart);
+        params.set("end_date", customEnd);
+      } else {
+        params.set("month", month);
+      }
+      const res = await fetch(`/api/meetings/stats?${params.toString()}`);
       if (!res.ok) return;
       const json: MeetingStats = await res.json();
       setStats(json);
@@ -268,7 +278,7 @@ export function MeetingsView() {
     } finally {
       setStatsLoading(false);
     }
-  }, [month]);
+  }, [month, dateMode, customStart, customEnd]);
 
   // -------------------------------------------------------------------------
   // Fetch meetings list
@@ -277,7 +287,12 @@ export function MeetingsView() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      params.set("month", month);
+      if (dateMode === "custom" && customStart && customEnd) {
+        params.set("start_date", customStart);
+        params.set("end_date", customEnd);
+      } else {
+        params.set("month", month);
+      }
       if (repFilter) params.set("rep_name", repFilter);
       if (outcomeFilter) params.set("outcome", outcomeFilter);
       params.set("page", String(page));
@@ -293,7 +308,7 @@ export function MeetingsView() {
     } finally {
       setLoading(false);
     }
-  }, [month, repFilter, outcomeFilter, page]);
+  }, [month, dateMode, customStart, customEnd, repFilter, outcomeFilter, page]);
 
   useEffect(() => {
     fetchStats();
@@ -306,7 +321,7 @@ export function MeetingsView() {
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [month, repFilter, outcomeFilter]);
+  }, [month, dateMode, customStart, customEnd, repFilter, outcomeFilter]);
 
   // -------------------------------------------------------------------------
   // Update meeting outcome
@@ -412,15 +427,69 @@ export function MeetingsView() {
 
         {/* Filters */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          <select
-            value={month}
-            onChange={(e) => setMonth(e.target.value)}
-            className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
-          >
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          {/* Date mode toggle */}
+          <div className="flex rounded-md border border-border/50 overflow-hidden">
+            <button
+              onClick={() => setDateMode("month")}
+              className={cn(
+                "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                dateMode === "month"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-card/60 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Month
+            </button>
+            <button
+              onClick={() => {
+                setDateMode("custom");
+                if (!customStart) {
+                  // Default to current month range
+                  const now = new Date();
+                  const y = now.getFullYear();
+                  const m = String(now.getMonth() + 1).padStart(2, "0");
+                  setCustomStart(`${y}-${m}-01`);
+                  setCustomEnd(`${y}-${m}-${String(new Date(y, now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`);
+                }
+              }}
+              className={cn(
+                "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                dateMode === "custom"
+                  ? "bg-primary/20 text-primary"
+                  : "bg-card/60 text-muted-foreground hover:text-foreground"
+              )}
+            >
+              Custom
+            </button>
+          </div>
+
+          {dateMode === "month" ? (
+            <select
+              value={month}
+              onChange={(e) => setMonth(e.target.value)}
+              className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
+            >
+              {monthOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              <input
+                type="date"
+                value={customStart}
+                onChange={(e) => setCustomStart(e.target.value)}
+                className="rounded-md border border-border/50 bg-card/60 px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={customEnd}
+                onChange={(e) => setCustomEnd(e.target.value)}
+                className="rounded-md border border-border/50 bg-card/60 px-2 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
+              />
+            </div>
+          )}
 
           <select
             value={repFilter}

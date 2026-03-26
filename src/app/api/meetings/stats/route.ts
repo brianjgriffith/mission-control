@@ -13,25 +13,40 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
-    // Default to current month
+    // Support custom date range or month
     const now = new Date();
     const defaultMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
     const month = searchParams.get("month") || defaultMonth;
+    const customStart = searchParams.get("start_date"); // YYYY-MM-DD
+    const customEnd = searchParams.get("end_date"); // YYYY-MM-DD
 
-    // Date range
-    const startDate = `${month}-01T00:00:00Z`;
-    const [y, m] = month.split("-").map(Number);
-    const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-    const endDate = `${nextMonth}-01T00:00:00Z`;
+    let dateStart: string;
+    let dateEnd: string;
 
-    // Fetch sales-rep meetings for the month (exclude coaching/team meetings)
-    const { data: meetings, error } = await supabase
+    if (customStart && customEnd) {
+      dateStart = `${customStart}T00:00:00Z`;
+      dateEnd = `${customEnd}T23:59:59Z`;
+    } else {
+      dateStart = `${month}-01T00:00:00Z`;
+      const [y, m] = month.split("-").map(Number);
+      const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+      dateEnd = `${nextMonth}-01T00:00:00Z`;
+    }
+
+    // Fetch sales-rep meetings for the period (exclude coaching/team meetings)
+    let meetingsQuery = supabase
       .from("meetings")
       .select("id, sales_rep_id, outcome")
       .not("sales_rep_id", "is", null)
-      .gte("meeting_date", startDate)
-      .lt("meeting_date", endDate)
+      .gte("meeting_date", dateStart)
       .limit(50000);
+
+    // Use lt for month ranges, lte for custom ranges
+    meetingsQuery = customStart && customEnd
+      ? meetingsQuery.lte("meeting_date", dateEnd)
+      : meetingsQuery.lt("meeting_date", dateEnd);
+
+    const { data: meetings, error } = await meetingsQuery;
 
     if (error) throw error;
 

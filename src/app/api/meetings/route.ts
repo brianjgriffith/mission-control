@@ -15,6 +15,8 @@ export async function GET(request: NextRequest) {
     let resolvedRepId = searchParams.get("rep_id");
     const repName = searchParams.get("rep_name");
     const month = searchParams.get("month"); // YYYY-MM
+    const startDate = searchParams.get("start_date"); // YYYY-MM-DD
+    const endDate = searchParams.get("end_date"); // YYYY-MM-DD
     const outcome = searchParams.get("outcome");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
@@ -47,12 +49,15 @@ export async function GET(request: NextRequest) {
     if (resolvedRepId) {
       query = query.eq("sales_rep_id", resolvedRepId);
     }
-    if (month) {
-      const startDate = `${month}-01T00:00:00Z`;
+    if (startDate && endDate) {
+      // Custom date range takes priority
+      query = query.gte("meeting_date", `${startDate}T00:00:00Z`).lte("meeting_date", `${endDate}T23:59:59Z`);
+    } else if (month) {
+      const monthStart = `${month}-01T00:00:00Z`;
       const [y, m] = month.split("-").map(Number);
       const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-      const endDate = `${nextMonth}-01T00:00:00Z`;
-      query = query.gte("meeting_date", startDate).lt("meeting_date", endDate);
+      const monthEnd = `${nextMonth}-01T00:00:00Z`;
+      query = query.gte("meeting_date", monthStart).lt("meeting_date", monthEnd);
     }
     if (outcome) {
       query = query.eq("outcome", outcome);
@@ -74,12 +79,14 @@ export async function GET(request: NextRequest) {
       .not("sales_rep_id", "is", null);
 
     if (resolvedRepId) summaryQuery = summaryQuery.eq("sales_rep_id", resolvedRepId);
-    if (month) {
-      const startDate = `${month}-01T00:00:00Z`;
+    if (startDate && endDate) {
+      summaryQuery = summaryQuery.gte("meeting_date", `${startDate}T00:00:00Z`).lte("meeting_date", `${endDate}T23:59:59Z`);
+    } else if (month) {
+      const monthStart = `${month}-01T00:00:00Z`;
       const [y, m] = month.split("-").map(Number);
       const nextMonth = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
-      const endDate = `${nextMonth}-01T00:00:00Z`;
-      summaryQuery = summaryQuery.gte("meeting_date", startDate).lt("meeting_date", endDate);
+      const monthEnd = `${nextMonth}-01T00:00:00Z`;
+      summaryQuery = summaryQuery.gte("meeting_date", monthStart).lt("meeting_date", monthEnd);
     }
 
     // Fetch all outcomes for counting (use a large limit since we only select one column)
