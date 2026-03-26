@@ -92,7 +92,6 @@ export async function POST(request: NextRequest) {
           email,
           first_name: body.first_name ?? "",
           last_name: body.last_name ?? "",
-          full_name: fullName,
           phone: body.phone ?? "",
           lifecycle_stage: "customer",
           metadata: {},
