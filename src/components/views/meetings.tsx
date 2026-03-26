@@ -11,13 +11,18 @@ import {
   ChevronRight,
   Check,
   Save,
+  ShieldCheck,
+  Target,
+  ArrowUpDown,
 } from "lucide-react";
+import { ContactDetail } from "@/components/contact-detail";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
 interface MeetingContact {
+  id: string;
   full_name: string;
   email: string;
 }
@@ -68,6 +73,50 @@ interface MeetingStats {
   per_rep: { rep_name: string; total_meetings: number; outcomes: Record<string, number> }[];
 }
 
+// Lead quality types
+interface LeadQualityOverall {
+  total_meetings: number;
+  completed: number;
+  no_shows: number;
+  rescheduled: number;
+  not_qualified: number;
+  leads: number;
+  sold: number;
+  no_show_rate: number;
+  qualification_rate: number;
+  close_rate: number;
+}
+
+interface LeadQualityRep {
+  rep_id: string;
+  rep_name: string;
+  total_meetings: number;
+  completed: number;
+  no_shows: number;
+  rescheduled: number;
+  not_qualified: number;
+  leads: number;
+  sold: number;
+  no_show_rate: number;
+  qualification_rate: number;
+  close_rate: number;
+  revenue_from_sold: number;
+}
+
+interface LeadQualitySource {
+  source: string;
+  total_meetings: number;
+  sold: number;
+  close_rate: number;
+}
+
+interface LeadQualityData {
+  period: string;
+  overall: LeadQualityOverall;
+  by_rep: LeadQualityRep[];
+  by_source: LeadQualitySource[];
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -96,6 +145,33 @@ function fmtDateTime(str: string): string {
     minute: "2-digit",
     hour12: true,
   });
+}
+
+function fmtCurrency(n: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(n / 100);
+}
+
+function noShowRateColor(rate: number): string {
+  if (rate < 15) return "text-green-400";
+  if (rate <= 25) return "text-amber-400";
+  return "text-red-400";
+}
+
+function qualificationRateColor(rate: number): string {
+  if (rate >= 70) return "text-green-400";
+  if (rate >= 50) return "text-amber-400";
+  return "text-red-400";
+}
+
+function closeRateColor(rate: number): string {
+  if (rate > 40) return "text-green-400";
+  if (rate >= 20) return "text-amber-400";
+  return "text-red-400";
 }
 
 const OUTCOME_OPTIONS: { value: MeetingOutcome; label: string }[] = [
@@ -136,11 +212,13 @@ function StatCard({
   label,
   value,
   valueColor,
+  subValue,
 }: {
   icon: typeof Phone;
   label: string;
   value: string;
   valueColor?: string;
+  subValue?: string;
 }) {
   return (
     <div className="rounded-lg border border-border/50 bg-card/40 p-3 text-center">
@@ -149,6 +227,9 @@ function StatCard({
       </div>
       <div className={cn("text-lg font-bold", valueColor || "text-foreground")}>{value}</div>
       <div className="text-[10px] text-muted-foreground">{label}</div>
+      {subValue && (
+        <div className="mt-0.5 text-[10px] text-muted-foreground/60">{subValue}</div>
+      )}
     </div>
   );
 }
@@ -236,6 +317,158 @@ function OutcomeBadge({
 }
 
 // ---------------------------------------------------------------------------
+// Rep Performance Table
+// ---------------------------------------------------------------------------
+
+type RepSortKey = "close_rate" | "total_meetings" | "no_show_rate" | "revenue_from_sold";
+
+function RepPerformanceTable({ reps }: { reps: LeadQualityRep[] }) {
+  const [sortKey, setSortKey] = useState<RepSortKey>("close_rate");
+  const [sortAsc, setSortAsc] = useState(false);
+
+  const sorted = useMemo(() => {
+    return [...reps].sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      return sortAsc ? (av as number) - (bv as number) : (bv as number) - (av as number);
+    });
+  }, [reps, sortKey, sortAsc]);
+
+  const handleSort = (key: RepSortKey) => {
+    if (sortKey === key) {
+      setSortAsc(!sortAsc);
+    } else {
+      setSortKey(key);
+      setSortAsc(false);
+    }
+  };
+
+  const SortHeader = ({ label, field }: { label: string; field: RepSortKey }) => (
+    <th
+      className="px-3 py-2.5 cursor-pointer hover:text-muted-foreground transition-colors select-none"
+      onClick={() => handleSort(field)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        <ArrowUpDown className={cn("h-3 w-3", sortKey === field ? "text-primary" : "text-muted-foreground/30")} />
+      </span>
+    </th>
+  );
+
+  if (reps.length === 0) return null;
+
+  return (
+    <div className="rounded-lg border border-border/30 bg-card/20">
+      <div className="border-b border-border/20 px-3 py-2.5">
+        <h3 className="text-sm font-medium text-foreground">Rep Performance</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+              <th className="px-3 py-2.5">Rep</th>
+              <SortHeader label="Meetings" field="total_meetings" />
+              <SortHeader label="No-Shows" field="no_show_rate" />
+              <th className="px-3 py-2.5">Qualified</th>
+              <th className="px-3 py-2.5">Sold</th>
+              <SortHeader label="Close Rate" field="close_rate" />
+              <SortHeader label="Revenue" field="revenue_from_sold" />
+            </tr>
+          </thead>
+          <tbody>
+            {sorted.map((rep) => (
+              <tr
+                key={rep.rep_id}
+                className="border-b border-border/10 transition-colors hover:bg-card/40"
+              >
+                <td className="px-3 py-2.5 text-xs font-medium text-foreground">
+                  {rep.rep_name}
+                </td>
+                <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                  {rep.total_meetings}
+                </td>
+                <td className="px-3 py-2.5 text-xs">
+                  <span className={noShowRateColor(rep.no_show_rate)}>
+                    {rep.no_shows} ({rep.no_show_rate}%)
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                  {rep.total_meetings - rep.no_shows - rep.rescheduled - rep.not_qualified}
+                </td>
+                <td className="px-3 py-2.5 text-xs">
+                  <span className="text-green-400">{rep.sold}</span>
+                </td>
+                <td className="px-3 py-2.5 text-xs">
+                  <span className={cn("font-medium", closeRateColor(rep.close_rate))}>
+                    {rep.close_rate}%
+                  </span>
+                </td>
+                <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                  {rep.revenue_from_sold > 0 ? fmtCurrency(rep.revenue_from_sold) : "--"}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Source Table
+// ---------------------------------------------------------------------------
+
+function SourceTable({ sources }: { sources: LeadQualitySource[] }) {
+  if (sources.length === 0 || (sources.length === 1 && sources[0].source === "Unknown")) {
+    return null;
+  }
+
+  return (
+    <div className="rounded-lg border border-border/30 bg-card/20">
+      <div className="border-b border-border/20 px-3 py-2.5">
+        <h3 className="text-sm font-medium text-foreground">Performance by Source</h3>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-border/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
+              <th className="px-3 py-2.5">Source</th>
+              <th className="px-3 py-2.5">Meetings</th>
+              <th className="px-3 py-2.5">Sold</th>
+              <th className="px-3 py-2.5">Close Rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sources.map((src) => (
+              <tr
+                key={src.source}
+                className="border-b border-border/10 transition-colors hover:bg-card/40"
+              >
+                <td className="px-3 py-2.5 text-xs font-medium text-foreground">
+                  {src.source}
+                </td>
+                <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                  {src.total_meetings}
+                </td>
+                <td className="px-3 py-2.5 text-xs">
+                  <span className="text-green-400">{src.sold}</span>
+                </td>
+                <td className="px-3 py-2.5 text-xs">
+                  <span className={cn("font-medium", closeRateColor(src.close_rate))}>
+                    {src.close_rate}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -244,8 +477,10 @@ export function MeetingsView() {
   const [meetings, setMeetings] = useState<Meeting[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, per_page: 50, total: 0, total_pages: 0 });
   const [stats, setStats] = useState<MeetingStats | null>(null);
+  const [leadQuality, setLeadQuality] = useState<LeadQualityData | null>(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(true);
+  const [lqLoading, setLqLoading] = useState(true);
 
   // Filter state
   const [month, setMonth] = useState(getCurrentMonth());
@@ -255,6 +490,7 @@ export function MeetingsView() {
   const [repFilter, setRepFilter] = useState("");
   const [outcomeFilter, setOutcomeFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   // -------------------------------------------------------------------------
   // Fetch stats
@@ -550,9 +786,16 @@ export function MeetingsView() {
                         {meeting.title || "—"}
                       </td>
                       <td className="px-3 py-2.5">
-                        <span className="text-xs font-medium text-foreground">
-                          {meeting.contacts?.full_name ?? "—"}
-                        </span>
+                        {meeting.contacts ? (
+                          <button
+                            onClick={() => setSelectedContactId(meeting.contacts!.id)}
+                            className="text-xs font-medium text-primary hover:text-primary/80 hover:underline text-left"
+                          >
+                            {meeting.contacts.full_name}
+                          </button>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
                       </td>
                       <td className="px-3 py-2.5 text-xs text-muted-foreground">
                         {meeting.sales_reps?.name ?? "—"}
@@ -609,6 +852,14 @@ export function MeetingsView() {
           )}
         </div>
       </div>
+
+      {/* Contact Detail Slide-over */}
+      {selectedContactId && (
+        <ContactDetail
+          contactId={selectedContactId}
+          onClose={() => setSelectedContactId(null)}
+        />
+      )}
     </div>
   );
 }

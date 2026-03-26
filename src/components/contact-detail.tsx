@@ -56,6 +56,28 @@ interface Charge {
   products: ChargeProduct | null;
 }
 
+interface Meeting {
+  id: string;
+  title: string;
+  meeting_date: string;
+  duration_minutes: number;
+  outcome: string;
+  outcome_notes: string;
+  sales_reps: { id: string; name: string } | null;
+}
+
+interface StudentEnrollment {
+  id: string;
+  name: string;
+  program: string;
+  status: string;
+  coach: string;
+  member_type: string;
+  signup_date: string;
+  monthly_revenue: number;
+  payment_plan: string;
+}
+
 interface ProductSummary {
   name: string;
   group: string | null;
@@ -66,6 +88,8 @@ interface ProductSummary {
 interface ContactData {
   contact: Contact;
   charges: Charge[];
+  meetings: Meeting[];
+  students: StudentEnrollment[];
   summary: {
     total_charges: number;
     total_spend: number;
@@ -107,6 +131,29 @@ const platformColors: Record<string, string> = {
   hubspot: "bg-amber-500/10 text-amber-400",
   samcart: "bg-blue-500/10 text-blue-400",
   kajabi: "bg-purple-500/10 text-purple-400",
+};
+
+const fmtDateTime = (s: string) => {
+  const d = new Date(s);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "2-digit" }) +
+    ", " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+};
+
+const OUTCOME_STYLES: Record<string, { bg: string; text: string; label: string }> = {
+  pending:       { bg: "bg-zinc-500/15",   text: "text-zinc-400",   label: "Pending" },
+  completed:     { bg: "bg-blue-500/15",   text: "text-blue-400",   label: "Completed" },
+  no_show:       { bg: "bg-red-500/15",    text: "text-red-400",    label: "No Show" },
+  rescheduled:   { bg: "bg-amber-500/15",  text: "text-amber-400",  label: "Rescheduled" },
+  not_qualified: { bg: "bg-orange-500/15", text: "text-orange-400", label: "Not Qualified" },
+  lead:          { bg: "bg-cyan-500/15",   text: "text-cyan-400",   label: "Lead" },
+  sold:          { bg: "bg-green-500/15",  text: "text-green-400",  label: "Sold" },
+};
+
+const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  active:     { bg: "bg-green-500/15",  text: "text-green-400" },
+  cancelled:  { bg: "bg-red-500/15",    text: "text-red-400" },
+  paused:     { bg: "bg-amber-500/15",  text: "text-amber-400" },
+  downgraded: { bg: "bg-orange-500/15", text: "text-orange-400" },
 };
 
 const PRODUCT_COLORS = [
@@ -286,6 +333,83 @@ export function ContactDetail({ contactId, onClose }: ContactDetailProps) {
                       </span>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+
+            {/* Enrollments */}
+            {data.students && data.students.length > 0 && (
+              <div className="border-b border-border px-5 py-4">
+                <h3 className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Enrollments
+                </h3>
+                <div className="space-y-2">
+                  {data.students.map((s) => {
+                    const statusStyle = STATUS_STYLES[s.status] || { bg: "bg-muted", text: "text-muted-foreground" };
+                    return (
+                      <div key={s.id} className="rounded-lg border border-border/50 bg-card/30 px-3 py-2.5">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-medium text-foreground capitalize">{s.program}</span>
+                          <span className={cn("rounded-full px-2 py-0.5 text-[10px] font-medium", statusStyle.bg, statusStyle.text)}>
+                            {s.status}
+                          </span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                          {s.signup_date && <span>Joined {fmtDate(s.signup_date)}</span>}
+                          {s.coach && <span>Coach: {s.coach}</span>}
+                          {s.member_type !== "student" && <span className="capitalize">{s.member_type}</span>}
+                          {s.monthly_revenue > 0 && <span>{fmtCurrency(s.monthly_revenue)}/mo</span>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Meetings */}
+            {data.meetings && data.meetings.length > 0 && (
+              <div className="border-b border-border px-5 py-4">
+                <h3 className="mb-3 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Meetings ({data.meetings.length})
+                </h3>
+                <div className="space-y-0">
+                  {data.meetings.map((mtg, i) => {
+                    const outcomeInfo = OUTCOME_STYLES[mtg.outcome] || { bg: "bg-muted", text: "text-muted-foreground", label: mtg.outcome };
+                    const isLast = i === data.meetings.length - 1;
+
+                    return (
+                      <div key={mtg.id} className="flex gap-3">
+                        {/* Timeline line + dot */}
+                        <div className="flex flex-col items-center">
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-blue-400/60" />
+                          {!isLast && <div className="w-px flex-1 bg-border/50" />}
+                        </div>
+
+                        {/* Content */}
+                        <div className={cn("flex-1 pb-3", isLast && "pb-0")}>
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-medium text-foreground">
+                              {mtg.title || "Meeting"}
+                            </span>
+                            <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium", outcomeInfo.bg, outcomeInfo.text)}>
+                              {outcomeInfo.label}
+                            </span>
+                          </div>
+                          <div className="mt-0.5 flex items-center gap-2 text-[10px] text-muted-foreground">
+                            <span>{fmtDateTime(mtg.meeting_date)}</span>
+                            {mtg.sales_reps?.name && <span>with {mtg.sales_reps.name}</span>}
+                            {mtg.duration_minutes > 0 && <span>{mtg.duration_minutes}min</span>}
+                          </div>
+                          {mtg.outcome_notes && (
+                            <p className="mt-1 text-[10px] text-muted-foreground/70 italic">
+                              {mtg.outcome_notes}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

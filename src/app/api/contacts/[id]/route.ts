@@ -42,6 +42,27 @@ export async function GET(
 
     if (chargesError) throw chargesError;
 
+    // Fetch meetings for this contact
+    const { data: meetings, error: meetingsError } = await supabase
+      .from("meetings")
+      .select(`
+        id, title, meeting_date, duration_minutes, outcome, outcome_notes,
+        sales_reps (id, name)
+      `)
+      .eq("contact_id", id)
+      .order("meeting_date", { ascending: false });
+
+    if (meetingsError) throw meetingsError;
+
+    // Fetch student enrollments for this contact
+    const { data: students, error: studentsError } = await supabase
+      .from("students")
+      .select("id, name, program, status, coach, member_type, signup_date, monthly_revenue, payment_plan")
+      .eq("contact_id", id)
+      .order("signup_date", { ascending: false });
+
+    if (studentsError) throw studentsError;
+
     // Compute summary stats
     const chargeList = charges || [];
     const totalSpend = chargeList.reduce((sum, c) => sum + (Number(c.amount) || 0), 0);
@@ -75,6 +96,8 @@ export async function GET(
     return NextResponse.json({
       contact,
       charges: chargeList,
+      meetings: meetings || [],
+      students: students || [],
       summary: {
         total_charges: chargeList.length,
         total_spend: totalSpend,
