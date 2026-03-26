@@ -517,6 +517,25 @@ export function MeetingsView() {
   }, [month, dateMode, customStart, customEnd]);
 
   // -------------------------------------------------------------------------
+  // Fetch lead quality metrics
+  // -------------------------------------------------------------------------
+  const fetchLeadQuality = useCallback(async () => {
+    setLqLoading(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("month", month);
+      const res = await fetch(`/api/meetings/lead-quality?${params.toString()}`);
+      if (!res.ok) return;
+      const json: LeadQualityData = await res.json();
+      setLeadQuality(json);
+    } catch (err) {
+      console.error("[MeetingsView] fetchLeadQuality:", err);
+    } finally {
+      setLqLoading(false);
+    }
+  }, [month]);
+
+  // -------------------------------------------------------------------------
   // Fetch meetings list
   // -------------------------------------------------------------------------
   const fetchMeetings = useCallback(async () => {
@@ -551,6 +570,10 @@ export function MeetingsView() {
   }, [fetchStats]);
 
   useEffect(() => {
+    fetchLeadQuality();
+  }, [fetchLeadQuality]);
+
+  useEffect(() => {
     fetchMeetings();
   }, [fetchMeetings]);
 
@@ -577,24 +600,24 @@ export function MeetingsView() {
             m.id === id ? { ...m, outcome, outcome_notes: notes } : m
           )
         );
-        // Refresh stats
+        // Refresh stats + lead quality
         fetchStats();
+        fetchLeadQuality();
       } catch (err) {
         console.error("[MeetingsView] updateOutcome:", err);
       }
     },
-    [fetchStats]
+    [fetchStats, fetchLeadQuality]
   );
 
   // -------------------------------------------------------------------------
-  // Stat card values
+  // Lead quality stat card values
   // -------------------------------------------------------------------------
-  const totalMeetings = stats?.total_meetings ?? 0;
-  const soldCount = stats?.by_outcome?.sold ?? 0;
-  const noShowCount = stats?.by_outcome?.no_show ?? 0;
-  const closeRateDenom =
-    soldCount + (stats?.by_outcome?.not_qualified ?? 0) + (stats?.by_outcome?.lead ?? 0);
-  const closeRate = closeRateDenom > 0 ? Math.round((soldCount / closeRateDenom) * 100) : 0;
+  const lq = leadQuality?.overall;
+  const totalMeetings = lq?.total_meetings ?? stats?.total_meetings ?? 0;
+  const noShowRate = lq?.no_show_rate ?? 0;
+  const qualRate = lq?.qualification_rate ?? 0;
+  const closeRate = lq?.close_rate ?? 0;
 
   // -------------------------------------------------------------------------
   // Rep options from stats
@@ -634,30 +657,34 @@ export function MeetingsView() {
           </p>
         </div>
 
-        {/* Stat Cards */}
+        {/* Enhanced Stat Cards */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <StatCard
             icon={Phone}
             label="Total Meetings"
-            value={statsLoading ? "..." : totalMeetings.toLocaleString()}
-          />
-          <StatCard
-            icon={Check}
-            label="Sold"
-            value={statsLoading ? "..." : soldCount.toLocaleString()}
-            valueColor="text-green-400"
+            value={lqLoading && statsLoading ? "..." : totalMeetings.toLocaleString()}
+            subValue={lq ? `${lq.sold} sold, ${lq.leads} leads` : undefined}
           />
           <StatCard
             icon={UserX}
-            label="No Shows"
-            value={statsLoading ? "..." : noShowCount.toLocaleString()}
-            valueColor="text-red-400"
+            label="No-Show Rate"
+            value={lqLoading ? "..." : `${noShowRate}%`}
+            valueColor={lqLoading ? undefined : noShowRateColor(noShowRate)}
+            subValue={lq ? `${lq.no_shows} of ${lq.total_meetings}` : undefined}
           />
           <StatCard
-            icon={TrendingUp}
+            icon={ShieldCheck}
+            label="Qualification Rate"
+            value={lqLoading ? "..." : `${qualRate}%`}
+            valueColor={lqLoading ? undefined : qualificationRateColor(qualRate)}
+            subValue="excl. no-shows & reschedules"
+          />
+          <StatCard
+            icon={Target}
             label="Close Rate"
-            value={statsLoading ? "..." : `${closeRate}%`}
-            valueColor="text-primary"
+            value={lqLoading ? "..." : `${closeRate}%`}
+            valueColor={lqLoading ? undefined : closeRateColor(closeRate)}
+            subValue={lq ? `${lq.sold} of ${lq.sold + lq.leads + lq.not_qualified} decisions` : undefined}
           />
         </div>
 
@@ -851,6 +878,24 @@ export function MeetingsView() {
             </div>
           )}
         </div>
+
+        {/* Lead Quality Section */}
+        {!lqLoading && leadQuality && (
+          <div className="mt-8 space-y-4">
+            <div>
+              <h2 className="text-lg font-semibold tracking-tight">Lead Quality</h2>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Sales rep performance and source analysis for {formatMonth(leadQuality.period)}
+              </p>
+            </div>
+
+            {/* Per-Rep Performance */}
+            <RepPerformanceTable reps={leadQuality.by_rep} />
+
+            {/* By Source */}
+            <SourceTable sources={leadQuality.by_source} />
+          </div>
+        )}
       </div>
 
       {/* Contact Detail Slide-over */}
