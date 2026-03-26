@@ -459,6 +459,7 @@ export function MeetingsView() {
                 <thead>
                   <tr className="border-b border-border/20 text-left text-[11px] font-medium uppercase tracking-wider text-muted-foreground/60">
                     <th className="px-3 py-2.5">Date/Time</th>
+                    <th className="px-3 py-2.5">Title</th>
                     <th className="px-3 py-2.5">Contact</th>
                     <th className="px-3 py-2.5">Sales Rep</th>
                     <th className="px-3 py-2.5">Outcome</th>
@@ -473,6 +474,9 @@ export function MeetingsView() {
                     >
                       <td className="whitespace-nowrap px-3 py-2.5 text-xs text-foreground">
                         {fmtDateTime(meeting.meeting_date)}
+                      </td>
+                      <td className="max-w-[220px] truncate px-3 py-2.5 text-xs text-muted-foreground" title={meeting.title}>
+                        {meeting.title || "—"}
                       </td>
                       <td className="px-3 py-2.5">
                         <span className="text-xs font-medium text-foreground">
