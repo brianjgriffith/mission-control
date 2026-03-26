@@ -26,23 +26,37 @@ export async function PATCH(
     const supabase = createAdminClient();
     const body = await request.json();
 
-    const { outcome, outcome_notes } = body;
-
-    // Validate outcome
-    if (!outcome || !VALID_OUTCOMES.includes(outcome)) {
-      return NextResponse.json(
-        { error: `Invalid outcome. Must be one of: ${VALID_OUTCOMES.join(", ")}` },
-        { status: 400 }
-      );
-    }
+    const { outcome, outcome_notes, contact_id } = body;
 
     // Build update payload
-    const update: Record<string, any> = {
-      outcome,
-      outcome_tagged_at: new Date().toISOString(),
-    };
+    const update: Record<string, any> = {};
+
+    // Contact assignment (can be set independently of outcome)
+    if (contact_id !== undefined) {
+      update.contact_id = contact_id || null;
+    }
+
+    // Outcome update
+    if (outcome) {
+      if (!VALID_OUTCOMES.includes(outcome)) {
+        return NextResponse.json(
+          { error: `Invalid outcome. Must be one of: ${VALID_OUTCOMES.join(", ")}` },
+          { status: 400 }
+        );
+      }
+      update.outcome = outcome;
+      update.outcome_tagged_at = new Date().toISOString();
+    }
+
     if (outcome_notes !== undefined) {
       update.outcome_notes = outcome_notes;
+    }
+
+    if (Object.keys(update).length === 0) {
+      return NextResponse.json(
+        { error: "No fields to update" },
+        { status: 400 }
+      );
     }
 
     const { data: meeting, error } = await supabase

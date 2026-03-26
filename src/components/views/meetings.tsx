@@ -469,6 +469,120 @@ function SourceTable({ sources }: { sources: LeadQualitySource[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Contact Assigner — inline search to assign a contact to a meeting
+// ---------------------------------------------------------------------------
+
+interface ContactSearchResult {
+  id: string;
+  full_name: string;
+  email: string;
+}
+
+function ContactAssigner({
+  meeting,
+  onAssign,
+  onClickContact,
+}: {
+  meeting: Meeting;
+  onAssign: (meetingId: string, contactId: string) => void;
+  onClickContact: (contactId: string) => void;
+}) {
+  const [searching, setSearching] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<ContactSearchResult[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!searching || query.length < 2) {
+      setResults([]);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const res = await fetch(`/api/contacts/search?q=${encodeURIComponent(query)}`);
+        if (res.ok) {
+          const json = await res.json();
+          setResults(json.contacts || []);
+        }
+      } catch {
+        // ignore
+      } finally {
+        setLoading(false);
+      }
+    }, 300); // debounce
+
+    return () => clearTimeout(timer);
+  }, [searching, query]);
+
+  if (meeting.contacts) {
+    return (
+      <button
+        onClick={() => onClickContact(meeting.contacts!.id)}
+        className="text-xs font-medium text-primary hover:text-primary/80 hover:underline text-left"
+      >
+        {meeting.contacts.full_name}
+      </button>
+    );
+  }
+
+  if (!searching) {
+    return (
+      <button
+        onClick={() => setSearching(true)}
+        className="text-[10px] text-muted-foreground/40 hover:text-primary"
+      >
+        + Assign
+      </button>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <input
+        autoFocus
+        type="text"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onBlur={() => {
+          // Delay to allow click on results
+          setTimeout(() => setSearching(false), 200);
+        }}
+        placeholder="Search contacts..."
+        className="w-36 rounded-md border border-border/50 bg-card/60 px-2 py-1 text-[11px] text-foreground placeholder:text-muted-foreground/40 outline-none focus:ring-1 focus:ring-primary/50"
+      />
+      {results.length > 0 && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-56 rounded-md border border-border bg-background shadow-xl">
+          {results.map((c) => (
+            <button
+              key={c.id}
+              onMouseDown={(e) => {
+                e.preventDefault(); // prevent blur
+                onAssign(meeting.id, c.id);
+                setSearching(false);
+                setQuery("");
+              }}
+              className="flex w-full items-start gap-2 px-3 py-2 text-left text-xs hover:bg-accent/50 transition-colors"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="font-medium text-foreground truncate">{c.full_name}</div>
+                <div className="text-[10px] text-muted-foreground truncate">{c.email}</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+      {loading && query.length >= 2 && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-56 rounded-md border border-border bg-background px-3 py-2 shadow-xl">
+          <span className="text-[10px] text-muted-foreground">Searching...</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -608,6 +722,32 @@ export function MeetingsView() {
       }
     },
     [fetchStats, fetchLeadQuality]
+  );
+
+  // -------------------------------------------------------------------------
+  // Assign contact to meeting
+  // -------------------------------------------------------------------------
+  const handleAssignContact = useCallback(
+    async (meetingId: string, contactId: string) => {
+      try {
+        const res = await fetch(`/api/meetings/${meetingId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contact_id: contactId }),
+        });
+        if (!res.ok) return;
+        const json = await res.json();
+        // Update local state with the returned meeting (includes contact join)
+        setMeetings((prev) =>
+          prev.map((m) =>
+            m.id === meetingId ? { ...m, contacts: json.meeting.contacts } : m
+          )
+        );
+      } catch (err) {
+        console.error("[MeetingsView] assignContact:", err);
+      }
+    },
+    []
   );
 
   // -------------------------------------------------------------------------
@@ -813,16 +953,11 @@ export function MeetingsView() {
                         {meeting.title || "—"}
                       </td>
                       <td className="px-3 py-2.5">
-                        {meeting.contacts ? (
-                          <button
-                            onClick={() => setSelectedContactId(meeting.contacts!.id)}
-                            className="text-xs font-medium text-primary hover:text-primary/80 hover:underline text-left"
-                          >
-                            {meeting.contacts.full_name}
-                          </button>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">—</span>
-                        )}
+                        <ContactAssigner
+                          meeting={meeting}
+                          onAssign={handleAssignContact}
+                          onClickContact={setSelectedContactId}
+                        />
                       </td>
                       <td className="px-3 py-2.5 text-xs text-muted-foreground">
                         {meeting.sales_reps?.name ?? "—"}
