@@ -12,11 +12,22 @@ export async function GET(request: NextRequest) {
     const supabase = createAdminClient();
     const { searchParams } = new URL(request.url);
 
-    const repId = searchParams.get("rep_id");
+    let resolvedRepId = searchParams.get("rep_id");
+    const repName = searchParams.get("rep_name");
     const month = searchParams.get("month"); // YYYY-MM
     const outcome = searchParams.get("outcome");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
+
+    // Resolve rep name → ID if needed
+    if (!resolvedRepId && repName) {
+      const { data: repData } = await supabase
+        .from("sales_reps")
+        .select("id")
+        .eq("name", repName)
+        .maybeSingle();
+      if (repData) resolvedRepId = repData.id;
+    }
 
     // Build query — only show meetings assigned to a sales rep
     let query = supabase
@@ -33,8 +44,8 @@ export async function GET(request: NextRequest) {
       .order("meeting_date", { ascending: false });
 
     // Filters
-    if (repId) {
-      query = query.eq("sales_rep_id", repId);
+    if (resolvedRepId) {
+      query = query.eq("sales_rep_id", resolvedRepId);
     }
     if (month) {
       const startDate = `${month}-01T00:00:00Z`;
@@ -62,7 +73,7 @@ export async function GET(request: NextRequest) {
       .select("outcome", { count: "exact", head: false })
       .not("sales_rep_id", "is", null);
 
-    if (repId) summaryQuery = summaryQuery.eq("sales_rep_id", repId);
+    if (resolvedRepId) summaryQuery = summaryQuery.eq("sales_rep_id", resolvedRepId);
     if (month) {
       const startDate = `${month}-01T00:00:00Z`;
       const [y, m] = month.split("-").map(Number);

@@ -63,9 +63,9 @@ interface MeetingsResponse {
 }
 
 interface MeetingStats {
-  total: number;
+  total_meetings: number;
   by_outcome: Record<string, number>;
-  by_rep: { rep_name: string; total: number; outcomes: Record<string, number> }[];
+  per_rep: { rep_name: string; total_meetings: number; outcomes: Record<string, number> }[];
 }
 
 // ---------------------------------------------------------------------------
@@ -278,7 +278,7 @@ export function MeetingsView() {
     try {
       const params = new URLSearchParams();
       params.set("month", month);
-      if (repFilter) params.set("rep_id", repFilter);
+      if (repFilter) params.set("rep_name", repFilter);
       if (outcomeFilter) params.set("outcome", outcomeFilter);
       params.set("page", String(page));
       params.set("per_page", "50");
@@ -338,7 +338,7 @@ export function MeetingsView() {
   // -------------------------------------------------------------------------
   // Stat card values
   // -------------------------------------------------------------------------
-  const totalMeetings = stats?.total ?? 0;
+  const totalMeetings = stats?.total_meetings ?? 0;
   const soldCount = stats?.by_outcome?.sold ?? 0;
   const noShowCount = stats?.by_outcome?.no_show ?? 0;
   const closeRateDenom =
@@ -349,11 +349,13 @@ export function MeetingsView() {
   // Rep options from stats
   // -------------------------------------------------------------------------
   const repOptions = useMemo(() => {
-    if (!stats?.by_rep) return [];
-    return stats.by_rep.map((r) => ({
-      value: r.rep_name,
-      label: r.rep_name,
-    }));
+    if (!stats?.per_rep) return [];
+    return stats.per_rep
+      .filter((r) => r.rep_name !== "Unknown")
+      .map((r) => ({
+        value: r.rep_name,
+        label: `${r.rep_name} (${r.total_meetings})`,
+      }));
   }, [stats]);
 
   // -------------------------------------------------------------------------
