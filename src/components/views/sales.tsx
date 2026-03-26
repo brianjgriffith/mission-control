@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { type RepQuota, type Deal } from "@/lib/types";
 import { RepChargesModal } from "@/components/rep-charges-modal";
+import { ManageReps } from "@/components/manage-reps";
 import {
   Plus,
   ArrowUpRight,
@@ -1215,6 +1216,7 @@ export function SalesView() {
   const [quotas, setQuotas] = useState<RepQuota[]>([]);
   const [deals, setDeals] = useState<Deal[]>([]);
   const [drillDownRep, setDrillDownRep] = useState<{ id: string; name: string; month?: string } | null>(null);
+  const [manageRepsOpen, setManageRepsOpen] = useState(false);
   const [repIdMap, setRepIdMap] = useState<Record<string, string>>({});
 
   // Fetch sales rep IDs for drill-down
@@ -1943,9 +1945,18 @@ export function SalesView() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-4xl px-6 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Sales</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Sales performance by rep</p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Sales</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Sales performance by rep</p>
+          </div>
+          <button
+            onClick={() => setManageRepsOpen(true)}
+            className="flex items-center gap-1.5 rounded-md border border-border/50 bg-card/40 px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <Users className="h-3.5 w-3.5" />
+            Manage Reps
+          </button>
         </div>
 
         {/* Filter Bar */}
@@ -2904,6 +2915,11 @@ export function SalesView() {
           onClose={() => setDrillDownRep(null)}
         />
       )}
+
+      <ManageReps
+        open={manageRepsOpen}
+        onClose={() => setManageRepsOpen(false)}
+      />
     </div>
   );
 }
