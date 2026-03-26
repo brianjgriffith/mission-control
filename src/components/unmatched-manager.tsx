@@ -72,6 +72,9 @@ export function UnmatchedManager({ open, onClose, onAssigned }: UnmatchedManager
   const [selectedProduct, setSelectedProduct] = useState<Record<string, string>>({});
   const [assigning, setAssigning] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [creatingNew, setCreatingNew] = useState<string | null>(null); // title being created for
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductGroup, setNewProductGroup] = useState("");
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -98,6 +101,42 @@ export function UnmatchedManager({ open, onClose, onAssigned }: UnmatchedManager
       return () => clearTimeout(t);
     }
   }, [successMessage]);
+
+  const handleCreateAndAssign = async (title: string) => {
+    if (!newProductName.trim()) return;
+    setAssigning(title);
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProductName.trim(),
+          group_name: newProductGroup || null,
+          assign_pattern: title,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        setSuccessMessage(`Error: ${err.error}`);
+        return;
+      }
+
+      const result = await res.json();
+      setSuccessMessage(
+        `Created "${result.product.name}" and assigned ${fmtNumber(result.charges_updated)} charges`
+      );
+      setCreatingNew(null);
+      setNewProductName("");
+      setNewProductGroup("");
+      await fetchData();
+      onAssigned?.();
+    } catch (err) {
+      console.error("[UnmatchedManager] create:", err);
+    } finally {
+      setAssigning(null);
+    }
+  };
 
   if (!open) return null;
 
@@ -243,60 +282,120 @@ export function UnmatchedManager({ open, onClose, onAssigned }: UnmatchedManager
                     {/* Expanded: assignment controls */}
                     {isExpanded && (
                       <div className="border-t border-border/30 px-3 py-3 bg-card/10">
-                        <div className="flex items-end gap-2">
-                          <div className="flex-1">
-                            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-                              Assign to product
+                        {creatingNew === group.title ? (
+                          /* Create New Product Form */
+                          <div className="space-y-2">
+                            <label className="block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                              Create new product
                             </label>
+                            <input
+                              type="text"
+                              placeholder="Product name (e.g. YouTube Sprint Vault Pass)"
+                              value={newProductName}
+                              onChange={(e) => setNewProductName(e.target.value)}
+                              autoFocus
+                              className="w-full rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none placeholder:text-muted-foreground/50 focus:ring-1 focus:ring-ring"
+                            />
                             <select
-                              value={selectedProduct[group.title] || ""}
-                              onChange={(e) =>
-                                setSelectedProduct((prev) => ({
-                                  ...prev,
-                                  [group.title]: e.target.value,
-                                }))
-                              }
+                              value={newProductGroup}
+                              onChange={(e) => setNewProductGroup(e.target.value)}
                               className="w-full rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
                             >
-                              <option value="">Select a product...</option>
-                              {Array.from(productsByGroup.entries()).map(
-                                ([groupName, products]) => (
-                                  <optgroup key={groupName} label={groupName}>
-                                    {products.map((p) => (
-                                      <option key={p.id} value={p.id}>
-                                        {p.name}
-                                      </option>
-                                    ))}
-                                  </optgroup>
-                                )
-                              )}
+                              <option value="">No product family (standalone)</option>
+                              {Array.from(productsByGroup.keys()).map((g) => (
+                                <option key={g} value={g}>{g}</option>
+                              ))}
                             </select>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => handleCreateAndAssign(group.title)}
+                                disabled={!newProductName.trim() || isAssigning}
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                                  newProductName.trim()
+                                    ? "bg-emerald-600 text-white hover:bg-emerald-700"
+                                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                                )}
+                              >
+                                {isAssigning ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
+                                Create & Assign
+                              </button>
+                              <button
+                                onClick={() => { setCreatingNew(null); setNewProductName(""); setNewProductGroup(""); }}
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                Cancel
+                              </button>
+                            </div>
                           </div>
-                          <button
-                            onClick={() => handleAssign(group.title)}
-                            disabled={
-                              !selectedProduct[group.title] || isAssigning
-                            }
-                            className={cn(
-                              "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
-                              selectedProduct[group.title]
-                                ? "bg-primary text-primary-foreground hover:bg-primary/90"
-                                : "bg-muted text-muted-foreground cursor-not-allowed"
-                            )}
-                          >
-                            {isAssigning ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <Check className="h-3 w-3" />
-                            )}
-                            Assign
-                          </button>
-                        </div>
-                        <p className="mt-2 text-[10px] text-muted-foreground/60">
-                          This will match all {fmtNumber(group.charge_count)}{" "}
-                          charges containing &ldquo;{group.title}&rdquo; and
-                          create a title mapping for future charges.
-                        </p>
+                        ) : (
+                          /* Assign to Existing Product */
+                          <>
+                            <div className="flex items-end gap-2">
+                              <div className="flex-1">
+                                <label className="mb-1 block text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+                                  Assign to product
+                                </label>
+                                <select
+                                  value={selectedProduct[group.title] || ""}
+                                  onChange={(e) =>
+                                    setSelectedProduct((prev) => ({
+                                      ...prev,
+                                      [group.title]: e.target.value,
+                                    }))
+                                  }
+                                  className="w-full rounded-md border border-border bg-card/40 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-ring"
+                                >
+                                  <option value="">Select a product...</option>
+                                  {Array.from(productsByGroup.entries()).map(
+                                    ([groupName, products]) => (
+                                      <optgroup key={groupName} label={groupName}>
+                                        {products.map((p) => (
+                                          <option key={p.id} value={p.id}>
+                                            {p.name}
+                                          </option>
+                                        ))}
+                                      </optgroup>
+                                    )
+                                  )}
+                                </select>
+                              </div>
+                              <button
+                                onClick={() => handleAssign(group.title)}
+                                disabled={!selectedProduct[group.title] || isAssigning}
+                                className={cn(
+                                  "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors",
+                                  selectedProduct[group.title]
+                                    ? "bg-primary text-primary-foreground hover:bg-primary/90"
+                                    : "bg-muted text-muted-foreground cursor-not-allowed"
+                                )}
+                              >
+                                {isAssigning ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Check className="h-3 w-3" />
+                                )}
+                                Assign
+                              </button>
+                            </div>
+                            <div className="mt-2 flex items-center justify-between">
+                              <p className="text-[10px] text-muted-foreground/60">
+                                Matches {fmtNumber(group.charge_count)} charges
+                                containing &ldquo;{group.title}&rdquo;
+                              </p>
+                              <button
+                                onClick={() => { setCreatingNew(group.title); setNewProductName(group.title); }}
+                                className="text-[10px] text-primary/70 hover:text-primary hover:underline"
+                              >
+                                + Create new product instead
+                              </button>
+                            </div>
+                          </>
+                        )}
                       </div>
                     )}
                   </div>
