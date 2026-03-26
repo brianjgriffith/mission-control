@@ -144,7 +144,8 @@ export async function POST(request: NextRequest) {
       await sleep(RATE_LIMIT_MS);
     }
 
-    // 5. Fetch contact associations
+    // 5. Fetch contact associations — create missing contacts from HubSpot
+    let contactsCreated = 0;
     for (const mtg of toUpsert) {
       try {
         const assocData = await hubspotGet(
@@ -153,7 +154,54 @@ export async function POST(request: NextRequest) {
         const associations = assocData.results || [];
         if (associations.length > 0) {
           const hsContactId = associations[0].id?.toString();
-          mtg.contact_id = contactMap.get(hsContactId) || null;
+          let supabaseContactId = hsContactId ? contactMap.get(hsContactId) : null;
+
+          // If contact doesn't exist in MC, fetch from HubSpot and create
+          if (!supabaseContactId && hsContactId) {
+            try {
+              await sleep(RATE_LIMIT_MS);
+              const contactRes = await hubspotGet(
+                `https://api.hubapi.com/crm/v3/objects/contacts/${hsContactId}?properties=email,firstname,lastname,phone`
+              );
+              const email = contactRes.properties?.email;
+              if (email) {
+                // Check if already exists by email
+                const { data: existing } = await supabase
+                  .from("contacts")
+                  .select("id")
+                  .eq("email", email.toLowerCase())
+                  .maybeSingle();
+
+                if (existing) {
+                  supabaseContactId = existing.id;
+                } else {
+                  const { data: newContact } = await supabase
+                    .from("contacts")
+                    .insert({
+                      hubspot_contact_id: hsContactId,
+                      email: email.toLowerCase(),
+                      first_name: contactRes.properties?.firstname || "",
+                      last_name: contactRes.properties?.lastname || "",
+                      phone: contactRes.properties?.phone || "",
+                      lifecycle_stage: "lead",
+                      metadata: {},
+                    })
+                    .select("id")
+                    .single();
+
+                  if (newContact) {
+                    supabaseContactId = newContact.id;
+                    contactMap.set(hsContactId, newContact.id);
+                    contactsCreated++;
+                  }
+                }
+              }
+            } catch {
+              // Skip contact creation errors — still sync the meeting without contact
+            }
+          }
+
+          mtg.contact_id = supabaseContactId || null;
         }
         await sleep(RATE_LIMIT_MS);
       } catch {
@@ -185,6 +233,7 @@ export async function POST(request: NextRequest) {
       fetched: totalFetched,
       upserted,
       with_rep: toUpsert.length,
+      contacts_created: contactsCreated,
     });
   } catch (error) {
     console.error("[POST /api/admin/sync-meetings]", error);
