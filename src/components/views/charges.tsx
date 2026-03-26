@@ -64,6 +64,8 @@ interface Charge {
   charge_date: string;
   source_platform: string;
   payment_plan_type: string;
+  refund_amount: number | null;
+  refund_date: string | null;
   contacts: ChargeContact | null;
   products: ChargeProduct | null;
   charge_attributions: ChargeAttribution | ChargeAttribution[] | null;
@@ -730,8 +732,17 @@ export function ChargesView() {
                             <span className="text-muted-foreground/50 italic">Unmatched</span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 text-right font-mono text-xs font-medium text-foreground">
-                          {fmtCurrency(charge.amount)}
+                        <td className="px-3 py-2.5 text-right font-mono text-xs font-medium">
+                          {charge.amount < 0 ? (
+                            <span className="text-red-400">{fmtCurrency(charge.amount)}</span>
+                          ) : charge.refund_amount && charge.refund_amount > 0 ? (
+                            <div>
+                              <span className="text-foreground line-through opacity-50">{fmtCurrency(charge.amount)}</span>
+                              <span className="ml-1 text-red-400 text-[10px]">Refunded</span>
+                            </div>
+                          ) : (
+                            <span className="text-foreground">{fmtCurrency(charge.amount)}</span>
+                          )}
                         </td>
                         <td className="px-3 py-2.5 text-center">
                           <span
