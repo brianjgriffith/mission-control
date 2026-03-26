@@ -11,6 +11,9 @@ import {
   ChevronLeft,
   ChevronRight,
   AlertTriangle,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown,
 } from "lucide-react";
 import { UnmatchedManager } from "@/components/unmatched-manager";
 import { ContactDetail } from "@/components/contact-detail";
@@ -225,6 +228,8 @@ export function ChargesView() {
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [attributingChargeId, setAttributingChargeId] = useState<string | null>(null);
   const [repFilter, setRepFilter] = useState("");
+  const [sortBy, setSortBy] = useState("charge_date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
   // -------------------------------------------------------------------------
   // Fetch stats (chart data)
@@ -256,6 +261,8 @@ export function ChargesView() {
       if (platformFilter) params.set("source_platform", platformFilter);
       if (repFilter) params.set("rep_id", repFilter);
       if (searchQuery) params.set("search", searchQuery);
+      params.set("sort_by", sortBy);
+      params.set("sort_dir", sortDir);
       params.set("page", String(page));
       params.set("per_page", "50");
 
@@ -270,7 +277,7 @@ export function ChargesView() {
     } finally {
       setLoading(false);
     }
-  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery, page]);
+  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery, sortBy, sortDir, page]);
 
   // Fetch sales reps for attribution dropdown
   useEffect(() => {
@@ -306,10 +313,20 @@ export function ChargesView() {
     [fetchCharges]
   );
 
+  // Toggle sort column — click same column to flip direction, click new column to sort desc
+  const handleSort = useCallback((column: string) => {
+    if (sortBy === column) {
+      setSortDir((d) => (d === "desc" ? "asc" : "desc"));
+    } else {
+      setSortBy(column);
+      setSortDir("desc");
+    }
+  }, [sortBy]);
+
   // Reset page when filters change
   useEffect(() => {
     setPage(1);
-  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery]);
+  }, [month, groupFilter, productFilter, platformFilter, repFilter, searchQuery, sortBy, sortDir]);
 
   // -------------------------------------------------------------------------
   // Chart data — grouped by product family
@@ -646,27 +663,41 @@ export function ChargesView() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-border/20 bg-card/20">
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Date
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Contact
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Product
-                    </th>
-                    <th className="px-3 py-2.5 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Amount
-                    </th>
-                    <th className="px-3 py-2.5 text-center text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Platform
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Sales Rep
-                    </th>
-                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Payment Type
-                    </th>
+                    {([
+                      { key: "charge_date", label: "Date", align: "left" },
+                      { key: "contact", label: "Contact", align: "left" },
+                      { key: "product", label: "Product", align: "left" },
+                      { key: "amount", label: "Amount", align: "right" },
+                      { key: "source_platform", label: "Platform", align: "center" },
+                      { key: "sales_rep", label: "Sales Rep", align: "left" },
+                      { key: "payment_plan_type", label: "Payment Type", align: "left" },
+                    ] as const).map((col) => {
+                      const sortable = ["charge_date", "amount", "source_platform", "payment_plan_type"].includes(col.key);
+                      const active = sortBy === col.key;
+                      return (
+                        <th
+                          key={col.key}
+                          className={cn(
+                            "px-3 py-2.5 text-[10px] font-semibold uppercase tracking-wider",
+                            col.align === "right" ? "text-right" : col.align === "center" ? "text-center" : "text-left",
+                            sortable ? "cursor-pointer select-none hover:text-foreground transition-colors" : "",
+                            active ? "text-primary" : "text-muted-foreground"
+                          )}
+                          onClick={sortable ? () => handleSort(col.key) : undefined}
+                        >
+                          <span className={cn("inline-flex items-center gap-1", col.align === "right" && "flex-row-reverse")}>
+                            {col.label}
+                            {sortable && (
+                              active
+                                ? sortDir === "asc"
+                                  ? <ArrowUp className="h-3 w-3" />
+                                  : <ArrowDown className="h-3 w-3" />
+                                : <ArrowUpDown className="h-3 w-3 opacity-30" />
+                            )}
+                          </span>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>

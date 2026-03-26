@@ -20,6 +20,12 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const perPage = Math.min(parseInt(searchParams.get("per_page") || "50", 10), 200);
+    const sortBy = searchParams.get("sort_by") || "charge_date";
+    const sortDir = searchParams.get("sort_dir") === "asc" ? true : false; // ascending?
+
+    // Allowed sort columns (prevent injection)
+    const ALLOWED_SORTS = ["charge_date", "amount", "source_platform", "payment_plan_type"];
+    const safeSortBy = ALLOWED_SORTS.includes(sortBy) ? sortBy : "charge_date";
 
     // If filtering by rep, get charge IDs attributed to that rep
     let repChargeIds: string[] | null = null;
@@ -58,7 +64,7 @@ export async function GET(request: NextRequest) {
       `,
         { count: "exact" }
       )
-      .order("charge_date", { ascending: false });
+      .order(safeSortBy, { ascending: sortDir });
 
     // Filters
     if (month) {
