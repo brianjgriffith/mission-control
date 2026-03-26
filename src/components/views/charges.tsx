@@ -206,6 +206,124 @@ function StatCard({
 }
 
 // ---------------------------------------------------------------------------
+// Sync Status Indicator
+// ---------------------------------------------------------------------------
+
+interface SyncInfo {
+  workflow: string;
+  last_run: string;
+  status: string;
+  records: number;
+  error_message: string | null;
+}
+
+interface SyncStatusResponse {
+  syncs: SyncInfo[];
+  overall_status: "healthy" | "stale" | "error";
+  last_sync: string | null;
+}
+
+function formatRelativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  return `${days}d ago`;
+}
+
+function formatWorkflowName(name: string): string {
+  return name
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function SyncStatusBadge() {
+  const [syncStatus, setSyncStatus] = useState<SyncStatusResponse | null>(null);
+  const [showDetails, setShowDetails] = useState(false);
+
+  useEffect(() => {
+    const fetchStatus = async () => {
+      try {
+        const res = await fetch("/api/sync-status");
+        if (res.ok) {
+          const data: SyncStatusResponse = await res.json();
+          setSyncStatus(data);
+        }
+      } catch {
+        // silently fail
+      }
+    };
+
+    fetchStatus();
+    const interval = setInterval(fetchStatus, 60_000);
+    return () => clearInterval(interval);
+  }, []);
+
+  if (!syncStatus) return null;
+
+  const dotColor =
+    syncStatus.overall_status === "healthy"
+      ? "bg-emerald-400"
+      : syncStatus.overall_status === "stale"
+        ? "bg-amber-400"
+        : "bg-red-400";
+
+  const label =
+    syncStatus.overall_status === "healthy" && syncStatus.last_sync
+      ? `Synced ${formatRelativeTime(syncStatus.last_sync)}`
+      : syncStatus.overall_status === "stale"
+        ? "Sync stale"
+        : syncStatus.overall_status === "error"
+          ? "Sync error"
+          : "No syncs";
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setShowDetails((v) => !v)}
+        className="flex items-center gap-1.5 rounded-md border border-border/30 bg-card/40 px-2.5 py-1 text-[11px] text-muted-foreground transition-colors hover:bg-card/60 hover:text-foreground"
+      >
+        <span className={cn("h-2 w-2 rounded-full", dotColor)} />
+        {label}
+      </button>
+
+      {showDetails && (
+        <div className="absolute right-0 top-full z-50 mt-1.5 w-72 rounded-lg border border-border/50 bg-[#1e1e2e] p-3 shadow-xl">
+          <h3 className="mb-2 text-xs font-semibold text-foreground">Sync Health</h3>
+          <div className="space-y-1.5">
+            {syncStatus.syncs.map((s) => (
+              <div key={s.workflow} className="flex items-center justify-between text-[11px]">
+                <div className="flex items-center gap-1.5">
+                  <span
+                    className={cn(
+                      "h-1.5 w-1.5 rounded-full",
+                      s.status === "success" ? "bg-emerald-400"
+                        : s.status === "error" || s.status === "failed" ? "bg-red-400"
+                          : "bg-amber-400"
+                    )}
+                  />
+                  <span className="text-foreground">{formatWorkflowName(s.workflow)}</span>
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <span>{s.records} rec</span>
+                  <span>{formatRelativeTime(s.last_run)}</span>
+                </div>
+              </div>
+            ))}
+            {syncStatus.syncs.length === 0 && (
+              <p className="text-[11px] text-muted-foreground">No sync entries found</p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -426,11 +544,16 @@ export function ChargesView() {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-6 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Charges & Revenue</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Company-wide transaction ledger from HubSpot
-          </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Charges & Revenue</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Company-wide transaction ledger from HubSpot
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <SyncStatusBadge />
+          </div>
         </div>
         {/* Unmatched button */}
         {summary && summary.by_group?.Unmatched > 0 && (
