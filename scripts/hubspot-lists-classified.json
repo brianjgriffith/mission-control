@@ -1,0 +1,2921 @@
+[
+  {
+    "id": 48,
+    "name": "VIP April 2023 Send List 1.csv",
+    "size": 137,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 59,
+    "name": "Spam Forms Submissions",
+    "size": 38,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 60,
+    "name": "Spam Forms Submissions",
+    "size": 38,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 74,
+    "name": "Channel Audit Submission",
+    "size": 287,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 75,
+    "name": "VRA",
+    "size": 7682,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 113,
+    "name": "think team",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 118,
+    "name": "VRA Elite",
+    "size": 148,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 148,
+    "name": "ELITE: No Login 15 Days",
+    "size": 116,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 149,
+    "name": "ELITE: Account Recovered",
+    "size": 48,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 150,
+    "name": "Think Media Team",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 152,
+    "name": "[OFF] ELITE: Login Creation",
+    "size": 57,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 162,
+    "name": "STAGE: Creator",
+    "size": 75,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 163,
+    "name": "STAGE: Architect",
+    "size": 52,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 164,
+    "name": "STAGE: Dabbler",
+    "size": 38,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 165,
+    "name": "STAGE: YouTubepreneur",
+    "size": 25,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 175,
+    "name": "ACTIVE: VRA Accelerator",
+    "size": 97,
+    "type": "STATIC",
+    "suggestedType": "skip_segment"
+  },
+  {
+    "id": 184,
+    "name": "CANCELLED: VRA Elite",
+    "size": 234,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 284,
+    "name": "Exclusion List: Call Outcomes and Lead Statuses",
+    "size": 1360523,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 285,
+    "name": "Maximum Dials [Day 1]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 286,
+    "name": "Maximum Dials [Day 2]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 287,
+    "name": "Maximum Dials [Day 3]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 288,
+    "name": "Maximum Dials [Day 4] ",
+    "size": 16,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 289,
+    "name": "Maximum Dials [Day 5]",
+    "size": 16,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 290,
+    "name": "Maximum Dials [Day 6]",
+    "size": 16,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 291,
+    "name": "Maximum Dials [Day 7]",
+    "size": 16,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 292,
+    "name": "00 Setters [Outreach Day 1]",
+    "size": 2539,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 293,
+    "name": "00 Setters [Outreach Day 2]",
+    "size": 2212,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 294,
+    "name": "00 Setters [Outreach Day 3]",
+    "size": 1806,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 295,
+    "name": "00 Setters [Outreach Day 4]",
+    "size": 617,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 296,
+    "name": "00 Setters [Outreach Day 6]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 297,
+    "name": "00 Setters [Outreach Day 7]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 298,
+    "name": "00 Setters [Outreach Day 5]",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 316,
+    "name": "ACTIVE: VRA Elite",
+    "size": 156,
+    "type": "STATIC",
+    "suggestedType": "skip_segment"
+  },
+  {
+    "id": 347,
+    "name": "Contacts Requested Refund / Cancellation",
+    "size": 2562,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 353,
+    "name": "Accelerator: Financing",
+    "size": 9,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 387,
+    "name": "Channel Audit Submission [HS FORM]",
+    "size": 69,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 405,
+    "name": "Think Media Customer Success and Sales",
+    "size": 37,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 418,
+    "name": "[Automation] Your Elite Monthly Accountability Review",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 431,
+    "name": "GWVL2024 Platinum",
+    "size": 26,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 491,
+    "name": "CALL: Perfect Video Recipe",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 492,
+    "name": "CALL: Income Streams",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 493,
+    "name": "CALL: Stage Coaching Call",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 494,
+    "name": "CALL: Analytics",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 495,
+    "name": "CALL: Content Planning",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 496,
+    "name": "CALL: Content Marketing",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 497,
+    "name": "CALL: Workshop",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 498,
+    "name": "CALL: Sean Q & A",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 499,
+    "name": "CALL: Tech Office Hour",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 500,
+    "name": "CALL: Title & Thumbnail Office Hour",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 501,
+    "name": "CALL: Quarterly Planning",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 506,
+    "name": "[Workflows] - Wed Jan 17 2024 15:23:57 GMT-0700 - ELITE: Call - Perfect Video Recipe",
+    "size": 11,
+    "type": "STATIC",
+    "suggestedType": "skip_workflow"
+  },
+  {
+    "id": 511,
+    "name": "(January 2024) Challenge VIP",
+    "size": 169,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 516,
+    "name": "Challenge VIP.csv",
+    "size": 175,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 533,
+    "name": "[Email] - Sat Feb 10 2024 16:34:16 GMT-0700 - Non-marketing contact recipients",
+    "size": 2,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 566,
+    "name": "Requested DFY Channel Makeover",
+    "size": 18,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 710,
+    "name": "Channel Audit Eligible",
+    "size": 20,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 711,
+    "name": "Partner Form Submission - Create Partner [ZAP]",
+    "size": 12,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 712,
+    "name": "Purchased YouTube 1K Challenge VIP",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 713,
+    "name": "Didn't Purchase YouTube 1K Challenge VIP",
+    "size": 1369988,
+    "type": "DYNAMIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 726,
+    "name": "GWVL 2022 Ticket Holders.csv",
+    "size": 1152,
+    "type": "STATIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 745,
+    "name": "COHORT: Promote courses coaching",
+    "size": 26,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 746,
+    "name": "COHORT: Community list building",
+    "size": 7,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 747,
+    "name": "COHORT: Hooks",
+    "size": 5,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 748,
+    "name": "COHORT: 3 Surefire Videos",
+    "size": 6,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 749,
+    "name": "COHORT: Titles and Thumbnails",
+    "size": 40,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 750,
+    "name": "COHORT: PVR",
+    "size": 16,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 751,
+    "name": "VRA Accelerator",
+    "size": 10,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 761,
+    "name": "Master List",
+    "size": 7682,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 769,
+    "name": "GWVL 2024 Optin",
+    "size": 3070,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 774,
+    "name": "Cristopher Argueta (Chat Assassin List - 04.09.24)",
+    "size": 684,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 777,
+    "name": "ACTIVE: VRA",
+    "size": 2432,
+    "type": "STATIC",
+    "suggestedType": "skip_segment"
+  },
+  {
+    "id": 778,
+    "name": "CANCELED: VRA",
+    "size": 1827,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 779,
+    "name": "CANCELED: VRA Accelerator",
+    "size": 172,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 789,
+    "name": "Real Estate Mastermind Form Filled Out",
+    "size": 21,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 790,
+    "name": "GWVL Optin - Not Purchased",
+    "size": 2834,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 791,
+    "name": "Elite Attending GWVL 2024",
+    "size": 11,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 804,
+    "name": "VRA Student Attending GWVL 2024",
+    "size": 95,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 817,
+    "name": "[Workflows] - Fri Apr 19 2024 16:48:55 GMT-0700 - Active VRA Student Ticket",
+    "size": 52,
+    "type": "STATIC",
+    "suggestedType": "skip_workflow"
+  },
+  {
+    "id": 843,
+    "name": "GWVS 2024 GA Ticket Holders",
+    "size": 1374,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 891,
+    "name": "GWVS Ticket Opt In",
+    "size": 4442,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 900,
+    "name": "CANCEL: Circle Account",
+    "size": 58,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 906,
+    "name": "More than 1 deal",
+    "size": 154,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 915,
+    "name": "ACCELERATOR: Owner is Dela",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 916,
+    "name": "ACCELERATOR: Owner is Alex",
+    "size": 68,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 917,
+    "name": "ACCELERATOR: Owner is Caleb",
+    "size": 55,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 918,
+    "name": "ACCELERATOR: Owner is Samuel",
+    "size": 41,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 919,
+    "name": "ACCELERATOR: Future 90 Day Game Plan Call",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 929,
+    "name": "Currently in ACCELERATOR: Booked 90 Day Game Plan Call -> Delay for 80 days, Send Email to Book Next Call",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 964,
+    "name": "Summit Attendees x VRA Students",
+    "size": 385,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 981,
+    "name": "ELITE: Rejoin",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1009,
+    "name": "Accelerator Clients for Checking and Updating",
+    "size": 103,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1011,
+    "name": "In Elite Canceled List but Elite Status is not Canceled",
+    "size": 3,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1012,
+    "name": "Elite Status is Canceled but not in Elite Canceled List",
+    "size": 3,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1039,
+    "name": "UPDATE NEEDED - Elite Current and Past Clients",
+    "size": 478,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1044,
+    "name": "UPDATE NEEDED - VRA Current and Past Clients",
+    "size": 22017,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1045,
+    "name": "UPDATE NEEDED - Accelerator Current and Past Clients",
+    "size": 281,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1064,
+    "name": "(July 2024) YouTube 1K Challenge: Owns Starter Kit",
+    "size": 1208,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_kit"
+  },
+  {
+    "id": 1065,
+    "name": "(July 2024) YouTube 1K Challenge: No VIP",
+    "size": 74781,
+    "type": "STATIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 1066,
+    "name": "(July 2024) YouTube 1K Challenge: No Starter Kit",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 1068,
+    "name": "(July 2024) YouTube 1K Challenge: VIP",
+    "size": 131,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1089,
+    "name": "(TMG) Elite: Win Back Campaign for Canceled Members",
+    "size": 134,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1090,
+    "name": "(TMG) Elite: Win Back Campaign for Canceled Members (cloned)",
+    "size": 246,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1104,
+    "name": "VRA: Rejoin",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1105,
+    "name": "ACCELERATOR: Rejoin",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1142,
+    "name": "(June 11 2024) 122k Webclass",
+    "size": 3337,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1151,
+    "name": "VRA Upgrade High Score",
+    "size": 135,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1169,
+    "name": "(July 2024) Challenge Opt Ins",
+    "size": 64390,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1170,
+    "name": "(July 2024) Challenge Opt Ins without VRA",
+    "size": 64124,
+    "type": "DYNAMIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 1179,
+    "name": "[FOR UPDATING] Elite: No contact owner / coach",
+    "size": 39,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1184,
+    "name": "[REDIRECT LIST] Thumbnail 1 not requested",
+    "size": 93,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1185,
+    "name": "[REDIRECT LIST] Thumbnail 2 not requested",
+    "size": 1,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1186,
+    "name": "[REDIRECT LIST] Thumbnail 3 not requested",
+    "size": 1,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1187,
+    "name": "[REDIRECT LIST] Thumbnail 4 not requested",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1188,
+    "name": "[REDIRECT LIST] Thumbnail 5 not requested",
+    "size": 1,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1189,
+    "name": "[REDIRECT LIST] Thumbnails 1-5 requested",
+    "size": 1,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1202,
+    "name": "[Workflows] - Thu Jul 25 2024 05:20:39 GMT-0700 - (TMG) YouTube 1k Challenge Optin Form Submitted -> Sync to ActiveCampaign",
+    "size": 74421,
+    "type": "STATIC",
+    "suggestedType": "skip_workflow"
+  },
+  {
+    "id": 1203,
+    "name": "CS: Purchased YouTube Starter Kit",
+    "size": 139,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1233,
+    "name": "PRODUCT: Camera Confidence",
+    "size": 337,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1234,
+    "name": "PRODUCT: Niche Finder",
+    "size": 4006,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1235,
+    "name": "PRODUCT: Starter Kit",
+    "size": 8636,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1236,
+    "name": "PRODUCT: VIP (July 2024)",
+    "size": 165,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1237,
+    "name": "PRODUCT: YouTube Shorts Masterclass",
+    "size": 252,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1238,
+    "name": "PRODUCT: A.I. for YouTube",
+    "size": 5,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1239,
+    "name": "PRODUCT: YouTube Roadmap Workshop",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1240,
+    "name": "PRODUCT: Christian Content Creator Playbook",
+    "size": 2,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1241,
+    "name": "PRODUCT: YouTube Strategy Worskhop",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1242,
+    "name": "PRODUCT: GWVL Summit 2024",
+    "size": 5,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1243,
+    "name": "PRODUCT: Video Success Secrets Vol. 2",
+    "size": 145,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1244,
+    "name": "PRODUCT: Video Creation Made Simple Workshop",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1245,
+    "name": "Armed Conference Opt In",
+    "size": 110,
+    "type": "STATIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 1246,
+    "name": "May 2024 - Active VRA Students",
+    "size": 233,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1247,
+    "name": "YouTube Bootcamp (2022)",
+    "size": 91,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1260,
+    "name": "PRODUCT: VCMS workshop",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1319,
+    "name": "(July 2024) Viral Video Bundle",
+    "size": 246,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1324,
+    "name": "(August 21, 2024) Real Estate Webclass (08.22.24)",
+    "size": 1632,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1358,
+    "name": "PRODUCT: YouTube for Real Estate Agents Mastermind Call 2024",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1359,
+    "name": "PRODUCT: Personal Branding Masterclass",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1368,
+    "name": "PRODUCT: The 5 Pillars of YouTube Mastery",
+    "size": 25,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1381,
+    "name": "(October 2024) YouTube 1K Challenge: Owns Starter Kit",
+    "size": 737,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_kit"
+  },
+  {
+    "id": 1382,
+    "name": "(October 2024) YouTube 1K Challenge: VIP",
+    "size": 68,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1423,
+    "name": "Haven't received the email: Book next 90 day game plan call",
+    "size": 5,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1424,
+    "name": "received the book next 90 day game plan call email",
+    "size": 78,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1425,
+    "name": "YouTube Growth Workshop Attendees",
+    "size": 22,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1430,
+    "name": "COHORT: Funnels and Email Marketing",
+    "size": 22,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 1431,
+    "name": "COHORT: Content Planning and Organization",
+    "size": 47,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 1432,
+    "name": "(July 2024) YouTube 1K Challenge Opt In Form",
+    "size": 74915,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1438,
+    "name": "Channel Audit Review Email Sent in the last 1 day",
+    "size": 2,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1439,
+    "name": "Stage Survey Feedback Provided in the last 1 day",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1453,
+    "name": "Invited to Think Members (not accepted)",
+    "size": 638,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1482,
+    "name": "Unengaged contacts",
+    "size": 619964,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1483,
+    "name": "[Email] - Tue Sep 24 2024 12:09:46 GMT-0700",
+    "size": 9289,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1488,
+    "name": "[Email] - Tue Sep 24 2024 17:05:55 GMT-0700",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1489,
+    "name": "Non-Buyer's Survey.csv",
+    "size": 107311,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1498,
+    "name": "PRODUCT: (October 2024) Challenge Recordings",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1499,
+    "name": "PRODUCT: (November 2024) Video Creation Made Simple Workshop",
+    "size": 200,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1500,
+    "name": "PRODUCT: Steal Our YouTube Playbook",
+    "size": 232,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1501,
+    "name": "PRODUCT: (November 2024) YouTube Money Secrets",
+    "size": 955,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1518,
+    "name": "PRODUCT: (October 2024) YouTube 1K Challenge VIP",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1529,
+    "name": "[Workflows] - Thu Oct 17 2024 19:47:37 GMT-0700 - (LIVE) 122K Views Webclass",
+    "size": 5,
+    "type": "STATIC",
+    "suggestedType": "skip_workflow"
+  },
+  {
+    "id": 1550,
+    "name": "(October 25, 2024) Accelerator Mastermind Attendance",
+    "size": 33,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1555,
+    "name": "Start Later: Accelerator (60 days)",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1560,
+    "name": "(November 2024) YouTube Money Secrets LIVE",
+    "size": 955,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1561,
+    "name": "PRODUCT: YouTube Secrets",
+    "size": 4857,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1562,
+    "name": "PRODUCT: YouTube Secrets - Abandon Cart",
+    "size": 5656,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1563,
+    "name": "PRODUCT: YouTube 1K Challenge VIP",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1564,
+    "name": "PRODUCT: Channel Audit",
+    "size": 15,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1571,
+    "name": "[Email] - Wed Nov 06 2024 18:32:23 GMT-0500",
+    "size": 2,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1572,
+    "name": "Master Contact List",
+    "size": 278489,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1581,
+    "name": "[Email] - Thu Nov 07 2024 10:43:44 GMT-0500",
+    "size": 6,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1582,
+    "name": "DO NOT EMAIL",
+    "size": 453775,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1583,
+    "name": "[Email] - Thu Nov 07 2024 17:21:07 GMT-0500",
+    "size": 8,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1584,
+    "name": "1000 Subs Club.csv",
+    "size": 406099,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1585,
+    "name": "Active Contacts Moved From Active Campaign",
+    "size": 407120,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1586,
+    "name": "[Email] - Fri Nov 08 2024 08:29:52 GMT-0500",
+    "size": 8,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1587,
+    "name": "November 2024 Video Creation Made Simple Attendees",
+    "size": 231,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1588,
+    "name": "VCMS Attendees_Second List Upddated Nov. 14, 2024",
+    "size": 32,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1598,
+    "name": "Primary Contact List",
+    "size": 653859,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1604,
+    "name": "(November 2024) YouTube Growth Day Opt-ins",
+    "size": 41727,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_event"
+  },
+  {
+    "id": 1615,
+    "name": "(November 2024) YouTube Growth Day VIP ONLY",
+    "size": 15,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1620,
+    "name": "[TMG] DFY Channel Makeover Offered",
+    "size": 115,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1621,
+    "name": "PRODUCT: 2024 Holiday Bundle",
+    "size": 2003,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1628,
+    "name": "MKTG: Active Clients - VRA (all)",
+    "size": 19822,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1645,
+    "name": "MKTG: Active Clients VRA (Lifetime)",
+    "size": 17420,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1650,
+    "name": "MKTG: Active Clients - VRA (no lifetime)",
+    "size": 2402,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1651,
+    "name": "MKTG: Active Clients - Accelerator",
+    "size": 94,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1652,
+    "name": "MKTG: Active Clients - Elite",
+    "size": 146,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1653,
+    "name": "MKTG: Past Clients (all)",
+    "size": 1885,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1654,
+    "name": "MKTG: All Clients (active & past)",
+    "size": 21799,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1669,
+    "name": "COMMUNICATIONS: Your Best Year Ever on YouTube Live Event",
+    "size": 2202,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1670,
+    "name": "PRODUCT: Your Best Year Ever on YouTube",
+    "size": 2316,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1672,
+    "name": "PRODUCT: Video Editing Basics",
+    "size": 1853,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1678,
+    "name": "Contacts who didn't open (12/16) Feb. 2024 Mastermind Reminder",
+    "size": 49,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1683,
+    "name": "Received Holiday Bundle Email",
+    "size": 122761,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1688,
+    "name": "COHORT: Creator Accountability",
+    "size": 7,
+    "type": "STATIC",
+    "suggestedType": "skip_cohort"
+  },
+  {
+    "id": 1691,
+    "name": "(Jan 2025) Best Year Ever Free Ebook Request",
+    "size": 291,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1697,
+    "name": "PRODUCT: (January 2025) YouTube 1K Challenge VIP",
+    "size": 80,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1706,
+    "name": "Lifetime Payments Completed",
+    "size": 187,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1715,
+    "name": "YouTube Growth Workshop - Ad Traffic",
+    "size": 224,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1720,
+    "name": "1/14/25 122K Views Webclass",
+    "size": 4949,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1757,
+    "name": "(January 2025) YouTube 1K Challenge Opt-ins",
+    "size": 59772,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1758,
+    "name": "PRODUCT: January 2025 Coaching & Accountability Cohort",
+    "size": 257,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1759,
+    "name": "[Email] - Thu Jan 30 2025 15:08:28 GMT-0800",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1760,
+    "name": "[Email] - Thu Jan 30 2025 15:09:49 GMT-0800",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1787,
+    "name": "MKTG: New VRA Students in the last 14 days",
+    "size": 21,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1792,
+    "name": "PRODUCT: 2025 YouTube Growth Bundle",
+    "size": 118,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1798,
+    "name": "West Coast Contacts",
+    "size": 437623,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1809,
+    "name": "Think Media Mastermind Waitlist",
+    "size": 28,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1815,
+    "name": "[TMG] VRA: Joined 90+ Days Ago (Active list)",
+    "size": 20279,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1820,
+    "name": "[TMG] VRA: Joined 90+ Days Ago (Static list)",
+    "size": 18717,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1831,
+    "name": "Real Estate Leads (No VRA)",
+    "size": 4623,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1832,
+    "name": "March 18, 2025 Real Estate Webclass Opt-ins",
+    "size": 3096,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1857,
+    "name": "PRODUCT: YouTube for Real Estate Agents Mastermind",
+    "size": 17,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1858,
+    "name": "COMMUNICATIONS: YouTube for Real Estate Agents Mastermind",
+    "size": 45,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1859,
+    "name": "PRODUCT: (April 2025) YouTube 1K Challenge VIP",
+    "size": 105,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1865,
+    "name": "(December 10, 2024) 122K Views Webclass - ST",
+    "size": 460,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1866,
+    "name": "(October 29, 2024) 122K Views Webclass - ST",
+    "size": 750,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1867,
+    "name": "(October 2024) VIP YouTube 1K Challenge - ST",
+    "size": 55,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1868,
+    "name": "(October 2024) YouTube 1K Challenge - ST",
+    "size": 5178,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1869,
+    "name": "(November 2024) YT Growth Day -ST",
+    "size": 4796,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1870,
+    "name": "(November 2024) YT Growth Day VIP - ST",
+    "size": 8,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1871,
+    "name": "(November 2024) VCMS",
+    "size": 183,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1872,
+    "name": "(November 8, 2024) YT Money Secrets - ST",
+    "size": 364,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1873,
+    "name": "(September 12, 2024) CCC Webclass - ST",
+    "size": 1749,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1874,
+    "name": "(January_2025) VIP YouTube 1K Challenge - ST",
+    "size": 73,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1875,
+    "name": "(January 2025) YouTube 1K Challenge - ST",
+    "size": 18200,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1876,
+    "name": "(January 2025) Best Year on YouTube - ST",
+    "size": 818,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1877,
+    "name": "(January 14, 2025) 122K Views Webclass - ST",
+    "size": 489,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1878,
+    "name": "(February 3, 2025) 122K Views Webclass - ST",
+    "size": 176,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1879,
+    "name": "(August 2024) YT Growth Day - ST",
+    "size": 3650,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1880,
+    "name": "(August 2024) YT Growth Day VIP - ST",
+    "size": 6,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1881,
+    "name": "(August 2024) VCMS - ST",
+    "size": 61,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1882,
+    "name": "(August 27, 2024) Real Estate Webclass - ST",
+    "size": 527,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1883,
+    "name": "(August 13, 2024) 122K Views Webclass - ST",
+    "size": 128,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1884,
+    "name": "2024 GWV Summit VIP - ST",
+    "size": 44,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1885,
+    "name": "GWV Summit Attendees - ST",
+    "size": 1003,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1886,
+    "name": "GWV Live 2024 GA and VIP - ST",
+    "size": 222,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1887,
+    "name": "GWV Live 2024 Attendees - ST",
+    "size": 413,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1888,
+    "name": "(May 29,2024) 122K Views Webclass - ST",
+    "size": 761,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1889,
+    "name": "(May 7, 2024) CCC Webclass - ST",
+    "size": 1466,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1890,
+    "name": "(March 2024) YouTube 1K Challenge VIP - ST",
+    "size": 77,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1891,
+    "name": "(March 2024) YouTube 1K Challenge Opt-ins - ST",
+    "size": 13038,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1892,
+    "name": "(March 18, 2025) Real Estate Webclass - ST",
+    "size": 290,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1893,
+    "name": "(June 20, 2024) 122K Views Webclass - ST",
+    "size": 748,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1894,
+    "name": "(March 12, 2024) 122K Views Webclass - ST",
+    "size": 160,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1895,
+    "name": "(March 4, 2025) 122K Views Webclass - ST",
+    "size": 691,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1896,
+    "name": "(July 2024) 1K Youtube Challenge VIP - ST",
+    "size": 85,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge_vip"
+  },
+  {
+    "id": 1897,
+    "name": "(July 2024) 1K Youtube Challenge Opt-ins - ST",
+    "size": 11544,
+    "type": "STATIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1898,
+    "name": "(July 15, 2024) 122K Views Webclass - ST",
+    "size": 84,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1899,
+    "name": "(January 2024) Real Estate Mastermind Call - ST",
+    "size": 37,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1900,
+    "name": "(January 29, 2024) 122K Views Webclass - ST",
+    "size": 676,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1901,
+    "name": "(January 16, 2024) Christian Content Creator Class - ST",
+    "size": 6,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1902,
+    "name": "(February 27, 2024) Real Estate Webclass - ST",
+    "size": 735,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1903,
+    "name": "(February 13, 2024) Christian Content Creator -ST",
+    "size": 1022,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1904,
+    "name": "(April 2024) Real Estate Mastermind - ST",
+    "size": 30,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1905,
+    "name": "(April 11, 2024) 122K Views Webclass - ST",
+    "size": 405,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 1907,
+    "name": "SMS Campaign - ST",
+    "size": 1552,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1914,
+    "name": "(April 2025) YouTube 1K Challenge Opt-ins",
+    "size": 47213,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_challenge"
+  },
+  {
+    "id": 1915,
+    "name": "Unnamed list 4/9/2025 1:47:33 PM",
+    "size": 250736,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1930,
+    "name": "RE Mastermind Enroll in Workflow",
+    "size": 144,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1933,
+    "name": "Contacts who clicked on Accelerator Booking Link",
+    "size": 544,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1934,
+    "name": "Active Accelerator (Not sent)",
+    "size": 87,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1935,
+    "name": "Active Accelerator (Sent)",
+    "size": 23,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1989,
+    "name": "[TMG] Auto-cancel Blacklist",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1990,
+    "name": "(April 28, 2025) Spain, France, Portugal effected by the blackout",
+    "size": 233,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1991,
+    "name": "PRODUCT: April 2025 Coaching & Accountability Cohort",
+    "size": 7,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 1992,
+    "name": "MKTG: April 2025 Coaching & Accountability Cohort",
+    "size": 190,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1993,
+    "name": "Cancelled VRA Subscription -> Remove from VRA Calendar",
+    "size": 2096,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1998,
+    "name": "Contacts that have Opted in for SMS Marketing",
+    "size": 250724,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 1999,
+    "name": "Contacts who have opted out of SMS Marketing",
+    "size": 14834,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2000,
+    "name": "Contacts who have not opted into SMS Marketing",
+    "size": 153643,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2005,
+    "name": "(May 2025) YouTube Growth Day Opt-ins",
+    "size": 21295,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_event"
+  },
+  {
+    "id": 2006,
+    "name": "Delivering SMS failed Contacts",
+    "size": 17453,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2007,
+    "name": "Dropped SMS Contacts",
+    "size": 350726,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2008,
+    "name": "Sending SMS Failed Contacts",
+    "size": 72,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2009,
+    "name": "SMS Sent Contacts",
+    "size": 97840,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2010,
+    "name": "Link in SMS Clicked Contacts",
+    "size": 39107,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2012,
+    "name": "SMS Delivered Contacts",
+    "size": 90092,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2017,
+    "name": "[TMG] SMS Exclusion List",
+    "size": 453243,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2018,
+    "name": "[TMG] Non-US/Canada Numbers",
+    "size": 92018,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2019,
+    "name": "Unnamed list 5/23/2025 9:53:02 AM",
+    "size": 4,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2020,
+    "name": "$300 VRA Annual Renewal Failed Payments",
+    "size": 13,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2034,
+    "name": "Unnamed list 5/29/2025 3:14:19 PM",
+    "size": 221098,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2035,
+    "name": "MKTG: June 2025 YouTube Money Secrets",
+    "size": 189,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2036,
+    "name": "PRODUCT: (June 2025) YouTube Money Secrets",
+    "size": 106,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2046,
+    "name": "June 5th 122k Views Webclass Opt-ins",
+    "size": 690,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2047,
+    "name": "INACTIVE Contacts from (April 2025) YouTube 1K Challenge",
+    "size": 46694,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2049,
+    "name": "Unnamed list 6/10/2025 2:20:26 PM",
+    "size": 2,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2050,
+    "name": "May 2025 Growth day opt-ins who viewed the VRA sales page but didn't buy",
+    "size": 715,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_event"
+  },
+  {
+    "id": 2059,
+    "name": "MKTG: VRA Membership Cancellations",
+    "size": 512,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2080,
+    "name": "Member on a SC subscription",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2090,
+    "name": "Unnamed list 6/24/2025 10:02:15 AM",
+    "size": 76,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2111,
+    "name": "PRODUCT: (July 2025) YouTube Jumpstart VIP",
+    "size": 87,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2112,
+    "name": "(July 2025) YouTube Jumpstart Opt-ins",
+    "size": 69094,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2113,
+    "name": "Deliverability test - Contacts file",
+    "size": 33,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2123,
+    "name": "[SMS] - Wed Jul 09 2025 10:47:36 GMT-0700",
+    "size": 2,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2128,
+    "name": "[Workflows] - Wed Jul 09 2025 21:19:07 GMT+0200 - ACCELERATOR: YouTube Roadmap template's through apitemplate",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "skip_workflow"
+  },
+  {
+    "id": 2129,
+    "name": "1000 Subs Club Kajabit to Hubspot Export 2025.csv",
+    "size": 464,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2130,
+    "name": "[one-off] [TMG] Contacts completing the Jumpstart wf prematurely",
+    "size": 34524,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2135,
+    "name": "MKTG: (Sept 2025) YouTube for Real Estate Agents Mastermind",
+    "size": 55,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2136,
+    "name": "PRODUCT: (Sept 2025) YouTube for Real Estate Agents Mastermind",
+    "size": 6,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2137,
+    "name": "Contacts who received the wrong next steps email for Jumpstart Opt-in",
+    "size": 5837,
+    "type": "STATIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2138,
+    "name": "Caleb Under $97",
+    "size": 1284,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2147,
+    "name": "MKTG: August 2025 Coaching & Accountability Cohort",
+    "size": 277,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2148,
+    "name": "(July 2025) YouTube Jumpstart VRA Bundle Purchasers",
+    "size": 324,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2149,
+    "name": "PRODUCT: August 2025 Coaching & Accountability Cohort",
+    "size": 18,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2150,
+    "name": "Caleb - Greater than $97",
+    "size": 2409,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2160,
+    "name": "October 2025 YouTube Mastermind Attendees",
+    "size": 47,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2161,
+    "name": "Accelerator students who didn't open the mastermind RSVP resend email",
+    "size": 27,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2166,
+    "name": "August 2025 122k Views Webclass Opt-ins",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2175,
+    "name": "[TMG] Contacts who ever received an SMS successfully",
+    "size": 90089,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2184,
+    "name": "(August 28, 2025) Real Estate Webclass",
+    "size": 2541,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2185,
+    "name": "Contacts on Pacific Time",
+    "size": 42632,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2186,
+    "name": "(September 3, 2025) Emergency YouTube Webclass",
+    "size": 6262,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2195,
+    "name": "Real Estate Leads (VRA ONLY)",
+    "size": 319,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2200,
+    "name": "Contacts who exited the Oct. 2025 Mastermind early",
+    "size": 16,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2201,
+    "name": "Past Mastermind Attendees and Contacts with High Intent",
+    "size": 991,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2210,
+    "name": "US-based Contacts",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2211,
+    "name": "122K Views Webclass - ST",
+    "size": 5167,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2213,
+    "name": "Real Estate Webclass - ST",
+    "size": 1502,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2214,
+    "name": "CCC Webclass - ST",
+    "size": 4004,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2215,
+    "name": "YouTube 1K Challenge - ST",
+    "size": 45083,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2216,
+    "name": "Growth Day - ST",
+    "size": 8235,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2233,
+    "name": "[TMG] TX Numbers",
+    "size": 8180,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2234,
+    "name": "July 2025 Jumpstart Opt Ins Who are Still Opening Emails 30 Days After Campaign Close",
+    "size": 23793,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2236,
+    "name": "Contacts who opened email with the wrong Amy P masterclass registration link",
+    "size": 20416,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2237,
+    "name": "PRODUCT: (October 2025) YouTube Jumpstart VIP",
+    "size": 51,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2238,
+    "name": "(October 2025) YouTube Jumpstart VRA Bundle Purchasers",
+    "size": 225,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2240,
+    "name": "Contacts Who Abandoned Oct. 2025 Mastermind Ticket Purchase",
+    "size": 255,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2249,
+    "name": "Evergreen 122k Views List",
+    "size": 21509,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2250,
+    "name": "Contacts that have Opted in for SMS Marketing - Split 1",
+    "size": 19383,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2251,
+    "name": "Contacts that have Opted in for SMS Marketing - Split 2",
+    "size": 19381,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2252,
+    "name": "February 2026 YouTube Mastermind Attendees",
+    "size": 77,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2253,
+    "name": "September 2025 122k Views Webclass Opt-ins",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2254,
+    "name": "Las Vegas Locals",
+    "size": 668,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2263,
+    "name": "(October 2025) YouTube Jumpstart Opt-ins",
+    "size": 30836,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2264,
+    "name": "October 2025 Mastermind - Abandon Cart Sequence Purchasers",
+    "size": 3,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2265,
+    "name": "[TMG] SMS Exclusion - Multiple Failed Attempts",
+    "size": 27453,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2274,
+    "name": "Contacts who opened course related emails",
+    "size": 42126,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2279,
+    "name": "PRODUCT: November 2025 Coaching & Accountability Cohort",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2280,
+    "name": "Dark July 2025 YouTube Jumpstart Opt-ins",
+    "size": 53564,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2281,
+    "name": "VRA PIF Bonus - Steal our YouTube Playbook",
+    "size": 69,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2282,
+    "name": "(Purchase) 122K Views Evergreen - VRA Bundle",
+    "size": 114,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2283,
+    "name": "MKTG: November 2025 Coaching & Accountability Cohort",
+    "size": 147,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2284,
+    "name": "Josh Leads",
+    "size": 4362,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2285,
+    "name": "PRODUCT: Create Awesome Thumbnails Templates",
+    "size": 41,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2286,
+    "name": "PRODUCT: How to Make Awesome Videos Checklist",
+    "size": 34,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2288,
+    "name": "(November 3, 2025) 122K Views Webclass",
+    "size": 5041,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2297,
+    "name": "Didn't Open Amazon Most Wished For",
+    "size": 275095,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2302,
+    "name": "PRODUCT: Creator Toolkit",
+    "size": 1597,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2303,
+    "name": "PRODUCT: 2026 YouTube Emergency Briefing",
+    "size": 1597,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2304,
+    "name": "MKTG: 2026 YouTube Emergency Briefing",
+    "size": 1398,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2313,
+    "name": "(November 18, 2025) Elite Webclass Opt In",
+    "size": 4086,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2315,
+    "name": "opened (11/21/2025) Black Friday Deals - all list",
+    "size": 19380,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2316,
+    "name": "(November 25, 2025) 122k Views Webclass",
+    "size": 3708,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2317,
+    "name": "(November 25, 2025)  122K Views Webclass Bundle Purchasers - AI Channel Audit",
+    "size": 12,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2318,
+    "name": "VRA Cancel test",
+    "size": 20,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2319,
+    "name": "contact was delivered (November 28, 2025) Holiday Sale - Black Friday",
+    "size": 67954,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2324,
+    "name": "Holiday Sale 2025 (Ad List)",
+    "size": 119,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2325,
+    "name": "Accelerator - Waitlist",
+    "size": 2,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2330,
+    "name": "(December 2025) Real Estate Webclass Reschedule Email",
+    "size": 433,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2331,
+    "name": "(December 16, 2025) Real Estate Webclass",
+    "size": 1682,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2340,
+    "name": "MKTG: (January 2026) YouTube for Real Estate Agents Mastermind",
+    "size": 18,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2353,
+    "name": "PRODUCT: (January 2026) YouTube Sprint Vault Pass",
+    "size": 1952,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2354,
+    "name": "PRODUCT: (January 2026) YouTube Sprint VIP",
+    "size": 112,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2355,
+    "name": "MKTG: (January 2026) YouTube Sprint Toolkit",
+    "size": 13430,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2356,
+    "name": "MKTG: (January 2026) YouTube Sprint Vault Pass (No VIP)",
+    "size": 1844,
+    "type": "DYNAMIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 2357,
+    "name": "MKTG: (January 2026) YouTube Sprint VIP (No Vault Pass)",
+    "size": 4,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2358,
+    "name": "MKTG: (January 2026) YouTube Sprint Vault Pass + VIP",
+    "size": 108,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2359,
+    "name": "MKTG: (January 2026) YouTube Sprint Free Access Only (No Vault or VIP)",
+    "size": 2925,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2361,
+    "name": "Creator Toolkit Sequence Need To Send",
+    "size": 23,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2362,
+    "name": "Creator Toolkit Sequence",
+    "size": 899,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2367,
+    "name": "Hard Bounced or unsubscribed from all marketing emails",
+    "size": 2705,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2373,
+    "name": "Old contacts(365+ days) with no activity, engagement, or opened email recently  (180+ days)",
+    "size": 10274,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2374,
+    "name": "Most recent activity in the last 6 months",
+    "size": 40980,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2375,
+    "name": "Most recent engagement in the last 6 months",
+    "size": 8317,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2376,
+    "name": "Most recent marketing email opened in the last 6 months",
+    "size": 184510,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2377,
+    "name": "Mark as non marketing contact",
+    "size": 12866,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2382,
+    "name": "YT Sprint Google Ads Leads form report.csv",
+    "size": 648,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2395,
+    "name": "Recent activity, engagement, or opened email recently",
+    "size": 5923,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2396,
+    "name": "(January 2026) 5 Stages Webclass Reschedule",
+    "size": 307,
+    "type": "STATIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2397,
+    "name": "MKTG: (January 2026) YouTube Sprint All Opt-ins",
+    "size": 36399,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2398,
+    "name": "(January 2026) YT Sprint contacts who have all 3 upgrades",
+    "size": 91,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2399,
+    "name": "(January 2026) 5 Stages Webclass Opt-ins",
+    "size": 1185,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2409,
+    "name": "MKTG: February 2026 Fast Start Cohort",
+    "size": 175,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2410,
+    "name": "MKTG: YouTube AI Automation Live Training",
+    "size": 195,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2411,
+    "name": "Accelerator Students who have not RSVP'd to February 2026 Mastermind",
+    "size": 66,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2412,
+    "name": "May 2026 YouTube Mastermind Attendees",
+    "size": 28,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2413,
+    "name": "Contacts List for Sinch",
+    "size": 16373,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2414,
+    "name": "(February 2, 2026) 122K Views Webclass Opt-ins",
+    "size": 2033,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2415,
+    "name": "5 Stages: Creator",
+    "size": 830,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2416,
+    "name": "5 Stages: Momentum Maker",
+    "size": 1252,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2417,
+    "name": "5 Stages: Content Pro",
+    "size": 494,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2418,
+    "name": "5 Stages: Business Builder",
+    "size": 38,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2419,
+    "name": "5 Stages: Creator CEO",
+    "size": 8,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2440,
+    "name": "January 2026 Sprint Opt-ins with an Interest in VRA",
+    "size": 3799,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2441,
+    "name": "Sinch Lookup - Canadian Numbers",
+    "size": 3025,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2442,
+    "name": "Sinch Lookup - US Country Code",
+    "size": 16436,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2449,
+    "name": "August 2026 YouTube Mastermind Attendees",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2450,
+    "name": "October 2026 YouTube Mastermind Attendees",
+    "size": 1,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2455,
+    "name": "NPS Promoters",
+    "size": 1385,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2456,
+    "name": "NPS Promoters (January 2026 Fast Start)",
+    "size": 31,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2461,
+    "name": "(March 2026) Emergency YouTube Webclass Opt-ins",
+    "size": 2149,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_webclass"
+  },
+  {
+    "id": 2462,
+    "name": "PRODUCT: (April 2026) YouTube Sprint Vault Pass",
+    "size": 100,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2463,
+    "name": "PRODUCT: (April 2026) YouTube Sprint VIP",
+    "size": 8,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2464,
+    "name": "MKTG: (April 2026) YouTube Sprint Toolkit",
+    "size": 13,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2465,
+    "name": "MKTG: (April 2026) YouTube Sprint Vault Pass (No VIP)",
+    "size": 92,
+    "type": "DYNAMIC",
+    "suggestedType": "skip_exclusion"
+  },
+  {
+    "id": 2466,
+    "name": "MKTG: (April 2026) YouTube Sprint VIP (No Vault Pass)",
+    "size": 0,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2467,
+    "name": "MKTG: (April 2026) YouTube Sprint Vault Pass + VIP",
+    "size": 8,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2468,
+    "name": "MKTG: (April 2026) YouTube Sprint Free Access Only (No Vault or VIP)",
+    "size": 2882,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2469,
+    "name": "(April 2026) YT Sprint contacts who have all 3 upgrades",
+    "size": 8,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2470,
+    "name": "MKTG: (April 2026) YouTube Sprint All Opt-ins",
+    "size": 2982,
+    "type": "DYNAMIC",
+    "suggestedType": "funnel_optin"
+  },
+  {
+    "id": 2477,
+    "name": "Beginner Creators",
+    "size": 13687,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2478,
+    "name": "Stuck Creators",
+    "size": 6429,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2483,
+    "name": "Business Owners",
+    "size": 3750,
+    "type": "DYNAMIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2485,
+    "name": "PRODUCT: YouTube AI Automation",
+    "size": 32,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  },
+  {
+    "id": 2486,
+    "name": "MKTG: Real Estate YouTube Game Plan Live Event",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "other"
+  },
+  {
+    "id": 2487,
+    "name": "PRODUCT: Real Estate YouTube Game Plan",
+    "size": 0,
+    "type": "STATIC",
+    "suggestedType": "skip_product"
+  }
+]

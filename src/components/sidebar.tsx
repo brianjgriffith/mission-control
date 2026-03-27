@@ -24,6 +24,7 @@ import {
   Phone,
   GripVertical,
   Megaphone,
+  GitBranch,
   Activity,
   LogOut,
 } from "lucide-react";
@@ -77,6 +78,7 @@ const GLOBAL_NAV: { id: View; label: string; icon: typeof LayoutDashboard; short
   { id: "calendar", label: "Calendar", icon: CalendarDays, shortcut: "8" },
   { id: "students", label: "Students", icon: GraduationCap, shortcut: "9" },
   { id: "marketing", label: "Marketing", icon: Megaphone, shortcut: "0" },
+  { id: "journeys", label: "Journeys", icon: GitBranch, shortcut: "" },
 ];
 
 const SECONDARY_ITEMS = [
