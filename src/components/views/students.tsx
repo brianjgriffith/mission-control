@@ -789,7 +789,31 @@ function RosterTab() {
                                     {student.name}
                                   </p>
                                   <p className="text-[10px] text-muted-foreground/60 truncate">
-                                    {student.email}
+                                    {student.email || (
+                                      <button
+                                        onClick={async (e) => {
+                                          e.stopPropagation();
+                                          const email = prompt(`Enter HubSpot email for ${student.name}:`);
+                                          if (!email) return;
+                                          const res = await fetch("/api/students/link-contact", {
+                                            method: "POST",
+                                            headers: { "Content-Type": "application/json" },
+                                            body: JSON.stringify({ student_id: student.id, email }),
+                                          });
+                                          if (res.ok) {
+                                            const data = await res.json();
+                                            alert(`Linked to ${data.hubspot_name} (${data.email})`);
+                                            window.location.reload();
+                                          } else {
+                                            const err = await res.json();
+                                            alert(`Error: ${err.error}`);
+                                          }
+                                        }}
+                                        className="text-primary/60 hover:text-primary hover:underline"
+                                      >
+                                        + Link to HubSpot
+                                      </button>
+                                    )}
                                   </p>
                                 </div>
                                 {student.switch_requested_to && (
