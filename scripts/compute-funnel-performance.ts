@@ -50,26 +50,41 @@ async function main() {
 
   console.log(`${funnels?.length} funnels to process\n`);
 
-  // Pre-load all contacts from Supabase for fast lookup
+  // Pre-load all contacts from Supabase (paginate in 1000-row chunks due to Supabase max_rows)
   console.log("Loading contacts from Supabase...");
-  const { data: allContacts } = await supabase
-    .from("contacts")
-    .select("id, email")
-    .neq("email", "");
-
   const emailToContactId = new Map<string, string>();
-  for (const c of allContacts || []) {
-    emailToContactId.set(c.email.toLowerCase(), c.id);
+  let contactOffset = 0;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("contacts")
+      .select("id, email")
+      .neq("email", "")
+      .range(contactOffset, contactOffset + 999);
+    if (!batch || batch.length === 0) break;
+    for (const c of batch) {
+      emailToContactId.set(c.email.toLowerCase(), c.id);
+    }
+    contactOffset += batch.length;
+    if (batch.length < 1000) break;
   }
   console.log(`  ${emailToContactId.size} contacts loaded`);
 
-  // Pre-load all charges grouped by contact_id
+  // Pre-load all charges (paginate in 1000-row chunks)
   console.log("Loading charges from Supabase...");
-  const { data: allCharges } = await supabase
-    .from("charges")
-    .select("contact_id, amount, charge_date")
-    .gt("amount", 0)
-    .order("charge_date", { ascending: true });
+  const allCharges: any[] = [];
+  let chargeOffset = 0;
+  while (true) {
+    const { data: batch } = await supabase
+      .from("charges")
+      .select("contact_id, amount, charge_date")
+      .gt("amount", 0)
+      .order("charge_date", { ascending: true })
+      .range(chargeOffset, chargeOffset + 999);
+    if (!batch || batch.length === 0) break;
+    allCharges.push(...batch);
+    chargeOffset += batch.length;
+    if (batch.length < 1000) break;
+  }
 
   const chargesByContact = new Map<string, Array<{ amount: number; date: Date }>>();
   for (const c of allCharges || []) {
