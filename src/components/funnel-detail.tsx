@@ -345,13 +345,13 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
               </div>
 
               {/* ---- What They Bought After ---- */}
-              {data.products_after.length > 0 && (
+              {(data.products_after?.length ?? 0) > 0 && (
                 <div className="rounded-lg border border-border/50 bg-card/20 p-4">
                   <h3 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     What They Bought After
                   </h3>
                   <div className="space-y-2">
-                    {data.products_after.map((p, i) => (
+                    {(data.products_after || []).map((p, i) => (
                       <div
                         key={p.name}
                         className="flex items-center justify-between rounded-md bg-card/30 px-3 py-2"
@@ -383,7 +383,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
               )}
 
               {/* ---- What They Already Owned ---- */}
-              {data.products_before.length > 0 && (
+              {(data.products_before?.length ?? 0) > 0 && (
                 <div className="rounded-lg border border-border/50 bg-card/20 p-4">
                   <h3 className="mb-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     What They Already Owned
@@ -392,7 +392,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                     These people had already purchased before opting in
                   </p>
                   <div className="space-y-2">
-                    {data.products_before.map((p, i) => (
+                    {(data.products_before || []).map((p, i) => (
                       <div
                         key={p.name}
                         className="flex items-center justify-between rounded-md bg-card/20 px-3 py-2"
@@ -424,7 +424,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
               )}
 
               {/* ---- Speed to Purchase ---- */}
-              {data.speed.avg_days !== null && (
+              {data.speed?.avg_days !== null && data.speed?.avg_days !== undefined && (
                 <div className="rounded-lg border border-border/50 bg-card/20 p-4">
                   <h3 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Speed to Purchase
@@ -436,7 +436,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                       <Clock className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
                         <div className="text-sm font-bold text-foreground">
-                          {data.speed.avg_days}d
+                          {data.speed?.avg_days}d
                         </div>
                         <div className="text-[10px] text-muted-foreground">Avg</div>
                       </div>
@@ -445,7 +445,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                       <Zap className="h-3.5 w-3.5 text-muted-foreground" />
                       <div>
                         <div className="text-sm font-bold text-foreground">
-                          {data.speed.median_days}d
+                          {data.speed?.median_days}d
                         </div>
                         <div className="text-[10px] text-muted-foreground">Median</div>
                       </div>
@@ -456,11 +456,11 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                   <div className="space-y-1.5">
                     {(() => {
                       const maxVal = Math.max(
-                        ...Object.values(data.speed.distribution),
+                        ...Object.values(data.speed?.distribution || {}),
                         1
                       );
                       return SPEED_BUCKET_ORDER.map((bucket) => {
-                        const count = data.speed.distribution[bucket] || 0;
+                        const count = (data.speed?.distribution || {})[bucket] || 0;
                         const pct = (count / maxVal) * 100;
                         return (
                           <div key={bucket} className="flex items-center gap-2">
