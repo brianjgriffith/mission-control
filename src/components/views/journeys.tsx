@@ -34,6 +34,9 @@ interface FunnelPerformance {
   conversion_rate: number;
   revenue_after: number;
   avg_days_to_purchase: number;
+  first_time_buyers: number;
+  repeat_buyers: number;
+  computed_at?: string;
 }
 
 type SortKey =
