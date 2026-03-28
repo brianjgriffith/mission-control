@@ -69,6 +69,13 @@ async function main() {
   }
   console.log(`  ${emailToContactId.size} contacts loaded`);
 
+  // Pre-load all products for group lookup
+  const { data: products } = await supabase.from("products").select("id, group_name, short_name");
+  const productGroupMap = new Map<string, string>();
+  for (const p of products || []) {
+    productGroupMap.set(p.id, p.group_name || p.short_name || "Other");
+  }
+
   // Pre-load all charges (paginate in 1000-row chunks)
   console.log("Loading charges from Supabase...");
   const allCharges: any[] = [];
@@ -76,7 +83,7 @@ async function main() {
   while (true) {
     const { data: batch } = await supabase
       .from("charges")
-      .select("contact_id, amount, charge_date")
+      .select("contact_id, amount, charge_date, product_id")
       .gt("amount", 0)
       .order("charge_date", { ascending: true })
       .range(chargeOffset, chargeOffset + 999);
@@ -86,13 +93,14 @@ async function main() {
     if (batch.length < 1000) break;
   }
 
-  const chargesByContact = new Map<string, Array<{ amount: number; date: Date }>>();
+  const chargesByContact = new Map<string, Array<{ amount: number; date: Date; productGroup: string }>>();
   for (const c of allCharges || []) {
     if (!c.contact_id) continue;
     if (!chargesByContact.has(c.contact_id)) chargesByContact.set(c.contact_id, []);
     chargesByContact.get(c.contact_id)!.push({
       amount: Number(c.amount) || 0,
       date: new Date(c.charge_date),
+      productGroup: c.product_id ? (productGroupMap.get(c.product_id) || "Other") : "Other",
     });
   }
   console.log(`  ${allCharges?.length} charges loaded across ${chargesByContact.size} contacts\n`);
@@ -144,6 +152,9 @@ async function main() {
     let daysCount = 0;
     let firstTimeBuyers = 0;
     let repeatBuyers = 0;
+    const daysToFirstPurchase: number[] = [];
+    const productsAfter: Record<string, { count: number; revenue: number }> = {};
+    const productsBefore: Record<string, { count: number; revenue: number }> = {};
 
     const processedEmails = new Set<string>();
 
@@ -184,16 +195,32 @@ async function main() {
         );
         totalDays += days;
         daysCount++;
+        daysToFirstPurchase.push(days);
+
+        // Product breakdown (after)
+        for (const c of afterCharges) {
+          const name = c.productGroup || "Other";
+          if (!productsAfter[name]) productsAfter[name] = { count: 0, revenue: 0 };
+          productsAfter[name].count++;
+          productsAfter[name].revenue += c.amount;
+        }
       } else if (beforeCharges.length > 0) {
         purchasedBefore++;
       } else {
         neverPurchased++;
       }
 
+      // Product breakdown (before)
+      for (const c of beforeCharges) {
+        const name = c.productGroup || "Other";
+        if (!productsBefore[name]) productsBefore[name] = { count: 0, revenue: 0 };
+        productsBefore[name].count++;
+        productsBefore[name].revenue += c.amount;
+      }
+
       // First-time buyer tracking
       const firstPurchaseDate = contactFirstPurchase.get(contactId);
       if (firstPurchaseDate && optinDate) {
-        // Was their first-ever purchase AFTER joining this funnel?
         if (firstPurchaseDate > optinDate) {
           firstTimeBuyers++;
         } else {
@@ -207,6 +234,31 @@ async function main() {
     const totalOptins = processedEmails.size;
     const conversionRate = totalOptins > 0 ? (purchasedAfter / totalOptins) * 100 : 0;
     const avgDays = daysCount > 0 ? Math.round(totalDays / daysCount) : null;
+    const medianDays = daysToFirstPurchase.length > 0
+      ? daysToFirstPurchase.sort((a, b) => a - b)[Math.floor(daysToFirstPurchase.length / 2)]
+      : null;
+
+    // Speed distribution buckets
+    const speedDist = {
+      "0-7 days": 0, "8-14 days": 0, "15-30 days": 0,
+      "31-60 days": 0, "61-90 days": 0, "90+ days": 0,
+    };
+    for (const d of daysToFirstPurchase) {
+      if (d <= 7) speedDist["0-7 days"]++;
+      else if (d <= 14) speedDist["8-14 days"]++;
+      else if (d <= 30) speedDist["15-30 days"]++;
+      else if (d <= 60) speedDist["31-60 days"]++;
+      else if (d <= 90) speedDist["61-90 days"]++;
+      else speedDist["90+ days"]++;
+    }
+
+    // Sort product breakdowns
+    const sortedAfter = Object.entries(productsAfter)
+      .map(([name, s]) => ({ name, count: s.count, revenue: s.revenue }))
+      .sort((a, b) => b.revenue - a.revenue);
+    const sortedBefore = Object.entries(productsBefore)
+      .map(([name, s]) => ({ name, count: s.count, revenue: s.revenue }))
+      .sort((a, b) => b.revenue - a.revenue);
 
     // Upsert result
     await supabase.from("funnel_performance").upsert(
@@ -219,8 +271,12 @@ async function main() {
         conversion_rate: Math.round(conversionRate * 10) / 10,
         revenue_after: revenueAfter,
         avg_days_to_purchase: avgDays,
+        median_days_to_purchase: medianDays,
         first_time_buyers: firstTimeBuyers,
         repeat_buyers: repeatBuyers,
+        products_after: sortedAfter,
+        products_before: sortedBefore,
+        speed_distribution: speedDist,
         computed_at: new Date().toISOString(),
       },
       { onConflict: "funnel_id" }
