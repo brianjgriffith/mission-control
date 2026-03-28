@@ -24,6 +24,7 @@ export type View =
   | 'students'
   | 'marketing'
   | 'meetings'
+  | 'contacts'
   | 'journeys'
   | 'sync_health';
 

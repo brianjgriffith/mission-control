@@ -27,6 +27,7 @@ import {
   GitBranch,
   Activity,
   LogOut,
+  Contact,
 } from "lucide-react";
 import {
   DndContext,
@@ -75,6 +76,7 @@ const GLOBAL_NAV: { id: View; label: string; icon: typeof LayoutDashboard; short
   { id: "sales", label: "Sales", icon: TrendingUp, shortcut: "7" },
   { id: "charges", label: "Charges", icon: DollarSign, shortcut: "" },
   { id: "meetings", label: "Meetings", icon: Phone, shortcut: "" },
+  { id: "contacts", label: "Contacts", icon: Contact, shortcut: "" },
   { id: "calendar", label: "Calendar", icon: CalendarDays, shortcut: "8" },
   { id: "students", label: "Students", icon: GraduationCap, shortcut: "9" },
   { id: "marketing", label: "Marketing", icon: Megaphone, shortcut: "0" },

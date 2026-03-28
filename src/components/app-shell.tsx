@@ -16,6 +16,7 @@ import { StudentsView } from "@/components/views/students";
 import { MarketingView } from "@/components/views/marketing";
 import { ChargesView } from "@/components/views/charges";
 import { MeetingsView } from "@/components/views/meetings";
+import { ContactsView } from "@/components/views/contacts";
 import { SyncHealthView } from "@/components/views/sync-health";
 import { JourneysView } from "@/components/views/journeys";
 import { CommandPalette } from "@/components/command-palette";
@@ -180,6 +181,8 @@ export function AppShell({ user }: AppShellProps) {
         return <ChargesView />;
       case "meetings":
         return <MeetingsView />;
+      case "contacts":
+        return <ContactsView />;
       case "assets":
         return <AssetsView />;
       case "tooling":
