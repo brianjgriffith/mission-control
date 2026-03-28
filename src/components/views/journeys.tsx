@@ -15,10 +15,12 @@ import {
   ChevronDown,
   Filter,
   Hash,
+  Package,
 } from "lucide-react";
 import { FunnelImport } from "@/components/funnel-import";
 import { FunnelDetail } from "@/components/funnel-detail";
 import { ContactDetail } from "@/components/contact-detail";
+import { ProductJourney } from "@/components/product-journey";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -133,6 +135,7 @@ export function JourneysView() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedFunnel, setSelectedFunnel] = useState<{ id: string; name: string } | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [selectedProductGroup, setSelectedProductGroup] = useState<string | null>(null);
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true);
@@ -317,6 +320,31 @@ export function JourneysView() {
                   summary.avgDays > 0 ? `${Math.round(summary.avgDays)}d` : "--"
                 }
               />
+            </div>
+
+            {/* ---- Product Journey Buttons ---- */}
+            <div className="mb-6 rounded-lg border border-border/50 bg-card/20 p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Package className="h-4 w-4 text-purple-400" />
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Product Journey Analysis
+                </h3>
+              </div>
+              <p className="text-[11px] text-muted-foreground/60 mb-3">
+                Trace buyer paths — see which funnels leads went through before purchasing each product.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {["Accelerator", "VRA Elite", "Video Ranking Academy"].map((group) => (
+                  <button
+                    key={group}
+                    onClick={() => setSelectedProductGroup(group)}
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-card/30 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-purple-600/15 hover:text-purple-300 hover:border-purple-500/30"
+                  >
+                    <GitBranch className="h-3 w-3" />
+                    {group}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* ---- Filters ---- */}
@@ -507,6 +535,14 @@ export function JourneysView() {
         <ContactDetail
           contactId={selectedContactId}
           onClose={() => setSelectedContactId(null)}
+        />
+      )}
+
+      {selectedProductGroup && (
+        <ProductJourney
+          productGroup={selectedProductGroup}
+          onClose={() => setSelectedProductGroup(null)}
+          onContactClick={(contactId) => setSelectedContactId(contactId)}
         />
       )}
     </div>
