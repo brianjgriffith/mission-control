@@ -17,6 +17,7 @@ import {
   Hash,
 } from "lucide-react";
 import { FunnelImport } from "@/components/funnel-import";
+import { FunnelDetail } from "@/components/funnel-detail";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -128,6 +129,7 @@ export function JourneysView() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [sortKey, setSortKey] = useState<SortKey>("total_optins");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
+  const [selectedFunnel, setSelectedFunnel] = useState<{ id: string; name: string } | null>(null);
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true);
@@ -411,6 +413,7 @@ export function JourneysView() {
                         <tr
                           key={f.funnel_id}
                           className="border-b border-border/20 transition-colors hover:bg-card/30 cursor-pointer"
+                          onClick={() => setSelectedFunnel({ id: f.funnel_id, name: f.funnel_name })}
                         >
                           <td className="max-w-[300px] truncate px-4 py-2.5 font-medium text-foreground">
                             {f.funnel_name}
@@ -473,6 +476,15 @@ export function JourneysView() {
         onClose={() => setImportOpen(false)}
         onImported={fetchPerformance}
       />
+
+      {/* Funnel Detail Panel */}
+      {selectedFunnel && (
+        <FunnelDetail
+          funnelId={selectedFunnel.id}
+          funnelName={selectedFunnel.name}
+          onClose={() => setSelectedFunnel(null)}
+        />
+      )}
     </div>
   );
 }
