@@ -166,16 +166,19 @@ export async function GET(
         }
       }
 
-      allContacts.push({
-        email: lc.email,
-        name,
-        contact_id: contactId,
-        opted_in: optinDate ? optinDate.toISOString() : "",
-        status,
-        first_purchase_after: firstPurchaseAfter,
-        total_spend_after: totalAfter,
-        total_spend_before: totalBefore,
-      });
+      // Only include contacts who purchased something
+      if (status !== "never_purchased") {
+        allContacts.push({
+          email: lc.email,
+          name,
+          contact_id: contactId,
+          opted_in: optinDate ? optinDate.toISOString() : "",
+          status,
+          first_purchase_after: firstPurchaseAfter,
+          total_spend_after: totalAfter,
+          total_spend_before: totalBefore,
+        });
+      }
     }
 
     // Apply search filter

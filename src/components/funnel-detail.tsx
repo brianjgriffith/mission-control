@@ -174,13 +174,12 @@ const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> 
   never_purchased:  { bg: "bg-zinc-500/15",  text: "text-zinc-400",  label: "Never Purchased" },
 };
 
-type ContactStatusFilter = "all" | "purchased_after" | "purchased_before" | "never_purchased";
+type ContactStatusFilter = "all" | "purchased_after" | "purchased_before";
 
 const CONTACT_FILTER_TABS: { key: ContactStatusFilter; label: string; color: string }[] = [
   { key: "all",               label: "All",              color: "text-foreground" },
   { key: "purchased_after",   label: "Purchased After",  color: "text-green-400" },
   { key: "purchased_before",  label: "Already Customers", color: "text-blue-400" },
-  { key: "never_purchased",   label: "Never Purchased",  color: "text-zinc-400" },
 ];
 
 export function FunnelDetail({ funnelId, funnelName, onClose, onContactClick }: FunnelDetailProps) {
