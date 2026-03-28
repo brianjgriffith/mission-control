@@ -39,6 +39,12 @@ interface RecentPurchaser {
   days_after: number;
 }
 
+interface CommonPath {
+  name: string;
+  count: number;
+  pct: number;
+}
+
 interface FunnelDetailData {
   funnel: { id: string; name: string; funnel_type: string };
   summary: {
@@ -50,6 +56,9 @@ interface FunnelDetailData {
     total_revenue_after: number;
     first_time_buyers: number;
     repeat_buyers: number;
+    avg_funnels_before_purchase?: number | null;
+    touch_distribution?: Record<string, number>;
+    common_paths?: CommonPath[];
   };
   products_after: ProductBreakdown[];
   products_before: ProductBreakdown[];
@@ -274,6 +283,63 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                   {summary.purchased_after > 0 && (
                     <div className="mt-2 text-[10px] text-muted-foreground/60">
                       {Math.round((summary.first_time_buyers / summary.purchased_after) * 100)}% of post-opt-in purchasers were brand new customers
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ---- Multi-Touch Path Analysis ---- */}
+              {summary.avg_funnels_before_purchase != null && summary.avg_funnels_before_purchase > 0 && (
+                <div className="rounded-lg border border-purple-500/30 bg-purple-500/[0.03] p-4">
+                  <h3 className="mb-3 text-xs font-semibold text-purple-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Package className="h-3 w-3" />
+                    Multi-Touch Journey
+                  </h3>
+
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <div className="text-lg font-bold text-purple-400">
+                        {summary.avg_funnels_before_purchase?.toFixed(1)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Avg funnels before purchase
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground mb-1">Touch distribution</div>
+                      {summary.touch_distribution && (() => {
+                        const maxVal = Math.max(1, ...Object.values(summary.touch_distribution));
+                        return Object.entries(summary.touch_distribution).map(([bucket, count]) => (
+                          <div key={bucket} className="flex items-center gap-2 mb-0.5">
+                            <span className="w-16 text-[9px] text-muted-foreground/70 text-right">{bucket}</span>
+                            <div className="flex-1 h-2.5 rounded-full bg-card/30 overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-purple-500/50"
+                                style={{ width: `${(count / maxVal) * 100}%` }}
+                              />
+                            </div>
+                            <span className="w-6 text-[9px] text-muted-foreground tabular-nums text-right">{count}</span>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Common co-occurring funnels */}
+                  {(summary.common_paths?.length ?? 0) > 0 && (
+                    <div className="mt-3 pt-3 border-t border-purple-500/10">
+                      <div className="text-[10px] text-muted-foreground mb-2">
+                        Other funnels these purchasers went through:
+                      </div>
+                      <div className="space-y-1">
+                        {(summary.common_paths || []).slice(0, 8).map((p) => (
+                          <div key={p.name} className="flex items-center gap-2">
+                            <div className="flex-1 text-[10px] text-foreground/80 truncate">{p.name}</div>
+                            <span className="text-[9px] text-purple-400 tabular-nums shrink-0">{p.pct}%</span>
+                            <span className="text-[9px] text-muted-foreground/50 tabular-nums shrink-0">{p.count} people</span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
