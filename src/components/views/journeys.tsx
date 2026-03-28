@@ -47,7 +47,8 @@ type SortKey =
   | "purchased_after"
   | "purchased_before"
   | "revenue_after"
-  | "avg_days_to_purchase";
+  | "avg_days_to_purchase"
+  | "first_time_buyers";
 
 type SortDir = "asc" | "desc";
 
@@ -396,13 +397,19 @@ export function JourneysView() {
                       >
                         Avg Days <SortIcon col="avg_days_to_purchase" />
                       </th>
+                      <th
+                        className="cursor-pointer px-3 py-2.5 text-right font-medium hover:text-foreground"
+                        onClick={() => handleSort("first_time_buyers")}
+                      >
+                        New Customers <SortIcon col="first_time_buyers" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="py-8 text-center text-muted-foreground"
                         >
                           No funnels match your filters
@@ -453,6 +460,13 @@ export function JourneysView() {
                             {f.avg_days_to_purchase > 0
                               ? `${Math.round(f.avg_days_to_purchase)}d`
                               : "--"}
+                          </td>
+                          <td className="px-3 py-2.5 text-right tabular-nums">
+                            {f.first_time_buyers > 0 ? (
+                              <span className="text-amber-400 font-medium">{fmtNumber(f.first_time_buyers)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">--</span>
+                            )}
                           </td>
                         </tr>
                       ))

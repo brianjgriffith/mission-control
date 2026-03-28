@@ -47,6 +47,8 @@ interface FunnelDetailData {
     never_purchased: number;
     conversion_rate: number;
     total_revenue_after: number;
+    first_time_buyers: number;
+    repeat_buyers: number;
   };
   products_after: ProductBreakdown[];
   products_before: ProductBreakdown[];
@@ -55,7 +57,8 @@ interface FunnelDetailData {
     median_days: number | null;
     distribution: Record<string, number>;
   };
-  recent_purchasers: RecentPurchaser[];
+  recent_purchasers?: RecentPurchaser[];
+  computed_at?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -241,6 +244,39 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                   <div className="text-[10px] text-green-400/70">Post-Opt-in Revenue</div>
                 </div>
               </div>
+
+              {/* ---- Entry Point / New Customer Metric ---- */}
+              {(summary.first_time_buyers > 0 || summary.repeat_buyers > 0) && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/[0.03] p-4">
+                  <h3 className="mb-2 text-xs font-semibold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <Zap className="h-3 w-3" />
+                    Entry Point — New Customers
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <div className="text-lg font-bold text-amber-400">
+                        {fmtNumber(summary.first_time_buyers)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        First-time buyers — this was their gateway into Think Media
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-lg font-bold text-foreground">
+                        {fmtNumber(summary.repeat_buyers)}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        Repeat buyers — already customers who bought again
+                      </div>
+                    </div>
+                  </div>
+                  {summary.purchased_after > 0 && (
+                    <div className="mt-2 text-[10px] text-muted-foreground/60">
+                      {Math.round((summary.first_time_buyers / summary.purchased_after) * 100)}% of post-opt-in purchasers were brand new customers
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* ---- Breakdown Bar ---- */}
               <div className="rounded-lg border border-border/50 bg-card/20 p-4">
@@ -449,7 +485,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
               )}
 
               {/* ---- Recent Purchasers ---- */}
-              {data.recent_purchasers.length > 0 && (
+              {(data.recent_purchasers?.length ?? 0) > 0 && (
                 <div className="rounded-lg border border-border/50 bg-card/20 p-4">
                   <h3 className="mb-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     Recent Purchasers
@@ -466,7 +502,7 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                         </tr>
                       </thead>
                       <tbody>
-                        {data.recent_purchasers.map((p, i) => (
+                        {(data.recent_purchasers || []).map((p, i) => (
                           <tr
                             key={`${p.email}-${i}`}
                             className="border-b border-border/10"
