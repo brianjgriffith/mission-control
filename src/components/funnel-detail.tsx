@@ -27,6 +27,7 @@ interface FunnelDetailProps {
 interface ProductBreakdown {
   name: string;
   count: number;
+  buyers?: number;
   revenue: number;
 }
 
@@ -369,8 +370,13 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums">
+                          {p.buyers != null && (
+                            <span className="text-foreground font-medium">
+                              {fmtNumber(p.buyers)} {p.buyers === 1 ? "person" : "people"}
+                            </span>
+                          )}
                           <span className="text-muted-foreground">
-                            {fmtNumber(p.count)} purchases
+                            {fmtNumber(p.count)} txns
                           </span>
                           <span className="font-medium text-green-400">
                             {fmtCurrency(p.revenue)}
@@ -410,8 +416,13 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                           </span>
                         </div>
                         <div className="flex items-center gap-3 shrink-0 text-xs tabular-nums">
+                          {p.buyers != null && (
+                            <span className="text-muted-foreground">
+                              {fmtNumber(p.buyers)} {p.buyers === 1 ? "person" : "people"}
+                            </span>
+                          )}
                           <span className="text-muted-foreground/60">
-                            {fmtNumber(p.count)} purchases
+                            {fmtNumber(p.count)} txns
                           </span>
                           <span className="font-medium text-muted-foreground">
                             {fmtCurrency(p.revenue)}

@@ -153,8 +153,8 @@ async function main() {
     let firstTimeBuyers = 0;
     let repeatBuyers = 0;
     const daysToFirstPurchase: number[] = [];
-    const productsAfter: Record<string, { count: number; revenue: number }> = {};
-    const productsBefore: Record<string, { count: number; revenue: number }> = {};
+    const productsAfter: Record<string, { count: number; revenue: number; buyers: Set<string> }> = {};
+    const productsBefore: Record<string, { count: number; revenue: number; buyers: Set<string> }> = {};
 
     const processedEmails = new Set<string>();
 
@@ -200,9 +200,10 @@ async function main() {
         // Product breakdown (after)
         for (const c of afterCharges) {
           const name = c.productGroup || "Other";
-          if (!productsAfter[name]) productsAfter[name] = { count: 0, revenue: 0 };
+          if (!productsAfter[name]) productsAfter[name] = { count: 0, revenue: 0, buyers: new Set() };
           productsAfter[name].count++;
           productsAfter[name].revenue += c.amount;
+          productsAfter[name].buyers.add(contactId);
         }
       } else if (beforeCharges.length > 0) {
         purchasedBefore++;
@@ -213,9 +214,10 @@ async function main() {
       // Product breakdown (before)
       for (const c of beforeCharges) {
         const name = c.productGroup || "Other";
-        if (!productsBefore[name]) productsBefore[name] = { count: 0, revenue: 0 };
+        if (!productsBefore[name]) productsBefore[name] = { count: 0, revenue: 0, buyers: new Set() };
         productsBefore[name].count++;
         productsBefore[name].revenue += c.amount;
+        if (contactId) productsBefore[name].buyers.add(contactId);
       }
 
       // First-time buyer tracking
@@ -252,12 +254,12 @@ async function main() {
       else speedDist["90+ days"]++;
     }
 
-    // Sort product breakdowns
+    // Sort product breakdowns (include unique buyer count)
     const sortedAfter = Object.entries(productsAfter)
-      .map(([name, s]) => ({ name, count: s.count, revenue: s.revenue }))
+      .map(([name, s]) => ({ name, count: s.count, buyers: s.buyers.size, revenue: s.revenue }))
       .sort((a, b) => b.revenue - a.revenue);
     const sortedBefore = Object.entries(productsBefore)
-      .map(([name, s]) => ({ name, count: s.count, revenue: s.revenue }))
+      .map(([name, s]) => ({ name, count: s.count, buyers: s.buyers.size, revenue: s.revenue }))
       .sort((a, b) => b.revenue - a.revenue);
 
     // Upsert result
