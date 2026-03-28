@@ -93,24 +93,78 @@ export async function GET(
       }
     }
 
-    // Fetch funnel journey path for this contact
+    // Fetch funnel journey path — try cached first, then live HubSpot lookup
+    let funnelJourney: any = null;
+
     const { data: funnelPath } = await supabase
       .from("contact_funnel_paths")
       .select("funnels_touched, total_funnels, first_funnel_date, days_to_purchase")
       .eq("contact_id", id)
       .maybeSingle();
 
+    if (funnelPath) {
+      funnelJourney = {
+        funnels_touched: funnelPath.funnels_touched || [],
+        total_funnels: funnelPath.total_funnels,
+        first_funnel_date: funnelPath.first_funnel_date,
+        days_to_purchase: funnelPath.days_to_purchase,
+      };
+    } else if (contact.hubspot_contact_id && !contact.hubspot_contact_id.startsWith("samcart-") && !contact.hubspot_contact_id.startsWith("email-")) {
+      // Live lookup from HubSpot
+      try {
+        const hsRes = await fetch(
+          `https://api.hubapi.com/contacts/v1/contact/vid/${contact.hubspot_contact_id}/profile`,
+          { headers: { Authorization: `Bearer ${process.env.HUBSPOT_API_KEY}` } }
+        );
+        if (hsRes.ok) {
+          const hsProfile = await hsRes.json();
+          const listMemberships = hsProfile["list-memberships"] || [];
+
+          // Get our funnel list IDs
+          const { data: funnels } = await supabase
+            .from("funnels")
+            .select("id, name, hubspot_list_id")
+            .eq("is_active", true);
+
+          const funnelListIds = new Set((funnels || []).map((f) => parseInt(f.hubspot_list_id)));
+
+          const touched = listMemberships
+            .filter((m: any) => funnelListIds.has(m["static-list-id"]) && m.timestamp > 0)
+            .map((m: any) => {
+              const funnel = (funnels || []).find((f) => parseInt(f.hubspot_list_id) === m["static-list-id"]);
+              return {
+                funnel_id: funnel?.id || "",
+                funnel_name: funnel?.name || "Unknown",
+                added_at: new Date(m.timestamp).toISOString(),
+              };
+            })
+            .sort((a: any, b: any) => new Date(a.added_at).getTime() - new Date(b.added_at).getTime());
+
+          if (touched.length > 0) {
+            const firstFunnelDate = touched[0].added_at;
+            const daysToP = firstPurchase
+              ? Math.round((new Date(firstPurchase).getTime() - new Date(firstFunnelDate).getTime()) / 86400000)
+              : null;
+
+            funnelJourney = {
+              funnels_touched: touched,
+              total_funnels: touched.length,
+              first_funnel_date: firstFunnelDate,
+              days_to_purchase: daysToP,
+            };
+          }
+        }
+      } catch (err) {
+        // Silently fail — funnel journey is optional
+      }
+    }
+
     return NextResponse.json({
       contact,
       charges: chargeList,
       meetings: meetings || [],
       students: students || [],
-      funnel_journey: funnelPath ? {
-        funnels_touched: funnelPath.funnels_touched || [],
-        total_funnels: funnelPath.total_funnels,
-        first_funnel_date: funnelPath.first_funnel_date,
-        days_to_purchase: funnelPath.days_to_purchase,
-      } : null,
+      funnel_journey: funnelJourney,
       summary: {
         total_charges: chargeList.length,
         total_spend: totalSpend,
