@@ -12,6 +12,11 @@ import {
   Package,
   Loader2,
   Zap,
+  ChevronDown,
+  ChevronUp,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -22,6 +27,43 @@ interface FunnelDetailProps {
   funnelId: string;
   funnelName: string;
   onClose: () => void;
+  onContactClick?: (contactId: string) => void;
+}
+
+interface FunnelContact {
+  email: string;
+  name: string;
+  contact_id: string | null;
+  opted_in: string;
+  status: "purchased_after" | "purchased_before" | "never_purchased";
+  first_purchase_after: {
+    product: string;
+    amount: number;
+    date: string;
+    days_after: number;
+  } | null;
+  total_spend_after: number;
+  total_spend_before: number;
+}
+
+interface ContactsCounts {
+  all: number;
+  purchased_after: number;
+  purchased_before: number;
+  never_purchased: number;
+}
+
+interface ContactsPagination {
+  page: number;
+  per_page: number;
+  total: number;
+  total_pages: number;
+}
+
+interface FunnelContactsData {
+  contacts: FunnelContact[];
+  counts: ContactsCounts;
+  pagination: ContactsPagination;
 }
 
 interface ProductBreakdown {
@@ -126,10 +168,34 @@ const SPEED_BUCKET_ORDER = [
 // Component
 // ---------------------------------------------------------------------------
 
-export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProps) {
+const STATUS_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  purchased_after:  { bg: "bg-green-500/15", text: "text-green-400", label: "Purchased After" },
+  purchased_before: { bg: "bg-blue-500/15",  text: "text-blue-400",  label: "Already Customer" },
+  never_purchased:  { bg: "bg-zinc-500/15",  text: "text-zinc-400",  label: "Never Purchased" },
+};
+
+type ContactStatusFilter = "all" | "purchased_after" | "purchased_before" | "never_purchased";
+
+const CONTACT_FILTER_TABS: { key: ContactStatusFilter; label: string; color: string }[] = [
+  { key: "all",               label: "All",              color: "text-foreground" },
+  { key: "purchased_after",   label: "Purchased After",  color: "text-green-400" },
+  { key: "purchased_before",  label: "Already Customers", color: "text-blue-400" },
+  { key: "never_purchased",   label: "Never Purchased",  color: "text-zinc-400" },
+];
+
+export function FunnelDetail({ funnelId, funnelName, onClose, onContactClick }: FunnelDetailProps) {
   const [data, setData] = useState<FunnelDetailData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Contacts section state
+  const [showContacts, setShowContacts] = useState(false);
+  const [contactsData, setContactsData] = useState<FunnelContactsData | null>(null);
+  const [contactsLoading, setContactsLoading] = useState(false);
+  const [contactsFilter, setContactsFilter] = useState<ContactStatusFilter>("all");
+  const [contactsSearch, setContactsSearch] = useState("");
+  const [contactsPage, setContactsPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
 
   const fetchDetail = useCallback(async () => {
     setLoading(true);
@@ -153,6 +219,41 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
   useEffect(() => {
     fetchDetail();
   }, [fetchDetail]);
+
+  // Fetch contacts when panel is open or filter/search/page changes
+  const fetchContacts = useCallback(async () => {
+    if (!showContacts) return;
+    setContactsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        status: contactsFilter,
+        page: String(contactsPage),
+        per_page: "50",
+        search: contactsSearch,
+      });
+      const res = await fetch(`/api/funnels/${funnelId}/contacts?${params}`);
+      if (!res.ok) return;
+      const json: FunnelContactsData = await res.json();
+      setContactsData(json);
+    } catch (err) {
+      console.error("[FunnelDetail] contacts fetch:", err);
+    } finally {
+      setContactsLoading(false);
+    }
+  }, [funnelId, showContacts, contactsFilter, contactsPage, contactsSearch]);
+
+  useEffect(() => {
+    fetchContacts();
+  }, [fetchContacts]);
+
+  // Debounced search
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setContactsSearch(searchInput);
+      setContactsPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   // Close on Escape
   useEffect(() => {
@@ -606,6 +707,178 @@ export function FunnelDetail({ funnelId, funnelName, onClose }: FunnelDetailProp
                   </div>
                 </div>
               )}
+
+              {/* ---- View Contacts Button / Section ---- */}
+              <div className="rounded-lg border border-border/50 bg-card/20">
+                <button
+                  onClick={() => setShowContacts((prev) => !prev)}
+                  className="flex w-full items-center justify-between px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hover:bg-card/30 transition-colors rounded-lg"
+                >
+                  <span className="flex items-center gap-2">
+                    <Users className="h-3.5 w-3.5" />
+                    View Contacts
+                  </span>
+                  {showContacts ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </button>
+
+                {showContacts && (
+                  <div className="border-t border-border/50 px-4 pb-4">
+                    {/* Filter Tabs */}
+                    <div className="flex flex-wrap gap-1.5 py-3">
+                      {CONTACT_FILTER_TABS.map((tab) => {
+                        const count = contactsData?.counts?.[tab.key] ?? 0;
+                        const isActive = contactsFilter === tab.key;
+                        return (
+                          <button
+                            key={tab.key}
+                            onClick={() => {
+                              setContactsFilter(tab.key);
+                              setContactsPage(1);
+                            }}
+                            className={cn(
+                              "rounded-full px-2.5 py-1 text-[10px] font-medium transition-colors",
+                              isActive
+                                ? tab.key === "all"
+                                  ? "bg-foreground/10 text-foreground"
+                                  : tab.key === "purchased_after"
+                                  ? "bg-green-500/20 text-green-400"
+                                  : tab.key === "purchased_before"
+                                  ? "bg-blue-500/20 text-blue-400"
+                                  : "bg-zinc-500/20 text-zinc-400"
+                                : "bg-card/30 text-muted-foreground hover:text-foreground"
+                            )}
+                          >
+                            {tab.label} ({fmtNumber(count)})
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative mb-3">
+                      <Search className="absolute left-2.5 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground/50" />
+                      <input
+                        type="text"
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        placeholder="Search by name or email..."
+                        className="w-full rounded-md border border-border/50 bg-card/30 py-1.5 pl-7 pr-3 text-[11px] text-foreground placeholder:text-muted-foreground/50 focus:border-purple-500/50 focus:outline-none focus:ring-1 focus:ring-purple-500/20"
+                      />
+                    </div>
+
+                    {/* Contact List */}
+                    {contactsLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <Loader2 className="h-5 w-5 animate-spin text-purple-400" />
+                      </div>
+                    ) : contactsData && contactsData.contacts.length > 0 ? (
+                      <>
+                        <div className="space-y-1.5">
+                          {contactsData.contacts.map((c, i) => {
+                            const badge = STATUS_BADGE[c.status] || STATUS_BADGE.never_purchased;
+                            return (
+                              <div
+                                key={`${c.email}-${i}`}
+                                className="rounded-md bg-card/30 px-3 py-2"
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    {c.contact_id && onContactClick ? (
+                                      <button
+                                        onClick={() => onContactClick(c.contact_id!)}
+                                        className="text-xs font-medium text-foreground hover:text-purple-400 transition-colors text-left truncate block"
+                                      >
+                                        {c.name || c.email}
+                                      </button>
+                                    ) : (
+                                      <span className="text-xs font-medium text-foreground truncate block">
+                                        {c.name || c.email}
+                                      </span>
+                                    )}
+                                    <span className="text-[10px] text-muted-foreground truncate block">
+                                      {c.email}
+                                    </span>
+                                  </div>
+                                  <span
+                                    className={cn(
+                                      "shrink-0 rounded-full px-2 py-0.5 text-[9px] font-medium",
+                                      badge.bg,
+                                      badge.text
+                                    )}
+                                  >
+                                    {badge.label}
+                                  </span>
+                                </div>
+
+                                {/* First Purchase + Total Spend */}
+                                <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
+                                  {c.first_purchase_after && (
+                                    <span>
+                                      <span className="text-green-400/80">
+                                        {c.first_purchase_after.product}
+                                      </span>
+                                      {" "}
+                                      {fmtCurrency(c.first_purchase_after.amount)}
+                                      {" "}
+                                      <span className="text-muted-foreground/60">
+                                        ({c.first_purchase_after.days_after}d after)
+                                      </span>
+                                    </span>
+                                  )}
+                                  {c.total_spend_after > 0 && (
+                                    <span>
+                                      Total: <span className="text-green-400">{fmtCurrency(c.total_spend_after)}</span>
+                                    </span>
+                                  )}
+                                  {c.total_spend_before > 0 && (
+                                    <span>
+                                      Prior: <span className="text-blue-400">{fmtCurrency(c.total_spend_before)}</span>
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+
+                        {/* Pagination */}
+                        {contactsData.pagination.total_pages > 1 && (
+                          <div className="mt-3 flex items-center justify-between">
+                            <span className="text-[10px] text-muted-foreground">
+                              Page {contactsData.pagination.page} of {contactsData.pagination.total_pages}
+                              {" "}({fmtNumber(contactsData.pagination.total)} contacts)
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setContactsPage((p) => Math.max(1, p - 1))}
+                                disabled={contactsData.pagination.page <= 1}
+                                className="rounded p-1 text-muted-foreground hover:bg-card/40 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <ChevronLeft className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setContactsPage((p) => Math.min(contactsData!.pagination.total_pages, p + 1))}
+                                disabled={contactsData.pagination.page >= contactsData.pagination.total_pages}
+                                className="rounded p-1 text-muted-foreground hover:bg-card/40 hover:text-foreground disabled:opacity-30 disabled:cursor-not-allowed"
+                              >
+                                <ChevronRight className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <p className="py-6 text-center text-[11px] text-muted-foreground">
+                        No contacts found
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           ) : null}
         </div>

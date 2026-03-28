@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { FunnelImport } from "@/components/funnel-import";
 import { FunnelDetail } from "@/components/funnel-detail";
+import { ContactDetail } from "@/components/contact-detail";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -131,6 +132,7 @@ export function JourneysView() {
   const [sortKey, setSortKey] = useState<SortKey>("total_optins");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [selectedFunnel, setSelectedFunnel] = useState<{ id: string; name: string } | null>(null);
+  const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true);
@@ -497,6 +499,14 @@ export function JourneysView() {
           funnelId={selectedFunnel.id}
           funnelName={selectedFunnel.name}
           onClose={() => setSelectedFunnel(null)}
+          onContactClick={(contactId) => setSelectedContactId(contactId)}
+        />
+      )}
+
+      {selectedContactId && (
+        <ContactDetail
+          contactId={selectedContactId}
+          onClose={() => setSelectedContactId(null)}
         />
       )}
     </div>

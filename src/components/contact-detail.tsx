@@ -13,6 +13,7 @@ import {
   Clock,
   User,
   ExternalLink,
+  GitBranch,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -85,11 +86,25 @@ interface ProductSummary {
   total: number;
 }
 
+interface FunnelTouch {
+  funnel_id: string;
+  funnel_name: string;
+  added_at: string;
+}
+
+interface FunnelJourney {
+  funnels_touched: FunnelTouch[];
+  total_funnels: number;
+  first_funnel_date: string;
+  days_to_purchase: number | null;
+}
+
 interface ContactData {
   contact: Contact;
   charges: Charge[];
   meetings: Meeting[];
   students: StudentEnrollment[];
+  funnel_journey?: FunnelJourney;
   summary: {
     total_charges: number;
     total_spend: number;
@@ -364,6 +379,59 @@ export function ContactDetail({ contactId, onClose }: ContactDetailProps) {
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {/* Funnel Journey */}
+            {data.funnel_journey && data.funnel_journey.funnels_touched.length > 0 && (
+              <div className="border-b border-border px-5 py-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <GitBranch className="h-3 w-3" />
+                    Funnel Journey
+                  </h3>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-purple-400 font-medium">
+                      {data.funnel_journey.total_funnels} {data.funnel_journey.total_funnels === 1 ? "funnel" : "funnels"}
+                    </span>
+                    {data.funnel_journey.days_to_purchase != null && (
+                      <span className="text-[10px] text-muted-foreground/60">
+                        {data.funnel_journey.days_to_purchase}d to purchase
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="space-y-0">
+                  {data.funnel_journey.funnels_touched.map((funnel, i) => {
+                    const isLast = i === data.funnel_journey!.funnels_touched.length - 1;
+                    return (
+                      <div key={`${funnel.funnel_id}-${i}`} className="flex gap-3">
+                        {/* Timeline line + dot */}
+                        <div className="flex flex-col items-center">
+                          <div className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-purple-400/60" />
+                          {!isLast && <div className="w-px flex-1 bg-border/50" />}
+                        </div>
+
+                        {/* Content */}
+                        <div className={cn("flex-1 pb-3", isLast && "pb-0")}>
+                          <span className="text-xs font-medium text-foreground">
+                            {funnel.funnel_name}
+                          </span>
+                          <div className="mt-0.5 text-[10px] text-muted-foreground">
+                            {fmtDate(funnel.added_at)}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {data.funnel_journey.days_to_purchase != null && (
+                  <div className="mt-3 rounded-md bg-purple-500/[0.06] border border-purple-500/15 px-3 py-2 text-[10px] text-purple-400/80">
+                    First purchase {data.funnel_journey.days_to_purchase} days after first funnel touch
+                  </div>
+                )}
               </div>
             )}
 

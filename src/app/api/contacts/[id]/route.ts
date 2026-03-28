@@ -93,11 +93,24 @@ export async function GET(
       }
     }
 
+    // Fetch funnel journey path for this contact
+    const { data: funnelPath } = await supabase
+      .from("contact_funnel_paths")
+      .select("funnels_touched, total_funnels, first_funnel_date, days_to_purchase")
+      .eq("contact_id", id)
+      .maybeSingle();
+
     return NextResponse.json({
       contact,
       charges: chargeList,
       meetings: meetings || [],
       students: students || [],
+      funnel_journey: funnelPath ? {
+        funnels_touched: funnelPath.funnels_touched || [],
+        total_funnels: funnelPath.total_funnels,
+        first_funnel_date: funnelPath.first_funnel_date,
+        days_to_purchase: funnelPath.days_to_purchase,
+      } : null,
       summary: {
         total_charges: chargeList.length,
         total_spend: totalSpend,
