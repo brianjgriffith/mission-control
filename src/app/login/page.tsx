@@ -12,8 +12,24 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+
+  async function handleResetPassword() {
+    if (!email) {
+      setError("Enter your email above, then click Forgot password.");
+      return;
+    }
+    setError("");
+    setResetLoading(true);
+    await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+    });
+    setResetLoading(false);
+    setResetSent(true);
+  }
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -73,12 +89,22 @@ export default function LoginPage() {
           </div>
 
           <div className="space-y-2">
-            <label
-              htmlFor="password"
-              className="text-xs font-medium text-muted-foreground"
-            >
-              Password
-            </label>
+            <div className="flex items-center justify-between">
+              <label
+                htmlFor="password"
+                className="text-xs font-medium text-muted-foreground"
+              >
+                Password
+              </label>
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                disabled={resetLoading}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
+              >
+                {resetLoading ? "Sending..." : "Forgot password?"}
+              </button>
+            </div>
             <Input
               id="password"
               type="password"
@@ -94,6 +120,12 @@ export default function LoginPage() {
             <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
               <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
               {error}
+            </div>
+          )}
+
+          {resetSent && (
+            <div className="rounded-md bg-primary/10 px-3 py-2 text-xs text-primary">
+              Reset link sent — check your email.
             </div>
           )}
 
