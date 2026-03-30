@@ -31,6 +31,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isLoginPage = request.nextUrl.pathname === "/login";
+  const isResetPage = request.nextUrl.pathname === "/reset-password";
   const isAuthCallback = request.nextUrl.pathname.startsWith("/auth/callback");
   const isApiRoute = request.nextUrl.pathname.startsWith("/api/");
 
@@ -39,8 +40,8 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  // Redirect unauthenticated users to login (except if already on login)
-  if (!user && !isLoginPage) {
+  // Redirect unauthenticated users to login (except if already on login or resetting password)
+  if (!user && !isLoginPage && !isResetPage) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
