@@ -681,8 +681,8 @@ function RepProfileView({ repName, allSales, allProducts, onBack, onUpsert, fetc
                   </div>
                   {hasRevSplit && (
                     <div className="mt-0.5 text-[10px] text-muted-foreground/50">
-                      New: {fmtMoney(p.newAmt)} / Recurring: {fmtMoney(p.recurAmt)}
-                      {p.refundAmt > 0 && <span className="text-red-400"> / Refund: -{fmtMoney(p.refundAmt)}</span>}
+                      New: {fmtMoney(p.newAmt)} + Recurring: {fmtMoney(p.recurAmt)}
+                      {p.refundAmt > 0 && <span className="text-red-400"> &minus; Refunds: {fmtMoney(p.refundAmt)}</span>}
                     </div>
                   )}
                 </div>
@@ -801,8 +801,8 @@ function RepProfileView({ repName, allSales, allProducts, onBack, onUpsert, fetc
                                   )}
                                   {(isExpanded || isEditingThis) && hasRevSplit && (
                                     <div className="mt-0.5 text-[10px] text-muted-foreground/50">
-                                      New: {fmtMoney(cell.new_amount)} / Rec: {fmtMoney(cell.recurring_amount)}
-                                      {cell.refund_amount > 0 && <span className="text-red-400"> / Ref: -{fmtMoney(cell.refund_amount)}</span>}
+                                      New: {fmtMoney(cell.new_amount)} + Rec: {fmtMoney(cell.recurring_amount)}
+                                      {cell.refund_amount > 0 && <span className="text-red-400"> &minus; Ref: {fmtMoney(cell.refund_amount)}</span>}
                                     </div>
                                   )}
                                   {cell.notes && (
@@ -1598,11 +1598,16 @@ export function SalesView() {
       return;
     }
     const dealCount = parseInt(editDealCount, 10) || 0;
-    const product = filterProduct || data?.products?.[0] || "General";
-    // Preserve existing sub-amounts from grid data
     const cell = gridData.grid[month]?.[rep];
+    // Determine the correct product: use filter, or the single product if only one exists
+    const product = filterProduct
+      || (cell?.products.length === 1 ? cell.products[0].product : null)
+      || data?.products?.[0]
+      || "General";
+    // Get sub-amounts from the specific product entry, not the aggregated cell totals
+    const productEntry = cell?.products.find((p) => p.product === product);
     await handleUpsert(rep, product, month, amount, dealCount,
-      cell?.new_amount, cell?.recurring_amount, cell?.booked_calls, cell?.refund_amount);
+      productEntry?.new_amount, productEntry?.recurring_amount, cell?.booked_calls, productEntry?.refund_amount);
     setEditingCell(null);
   };
 
@@ -2454,12 +2459,12 @@ export function SalesView() {
                 <>
                   <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
                     <span className="text-emerald-400">{fmtMoney(stats.totalNew)} new</span>
-                    <span className="text-muted-foreground/40">/</span>
+                    <span className="text-muted-foreground/40">+</span>
                     <span className="text-blue-400">{fmtMoney(stats.totalRecurring)} recurring</span>
                     {stats.totalRefunds > 0 && (
                       <>
-                        <span className="text-muted-foreground/40">/</span>
-                        <span className="text-red-400">-{fmtMoney(stats.totalRefunds)} refunds</span>
+                        <span className="text-red-400/60">&minus;</span>
+                        <span className="text-red-400">{fmtMoney(stats.totalRefunds)} refunds</span>
                       </>
                     )}
                   </div>
@@ -2872,8 +2877,8 @@ export function SalesView() {
                                       </div>
                                       {hasRevSplit && (
                                         <div className="ml-[7.5rem] mt-0.5 text-[10px] text-muted-foreground/50">
-                                          New: {fmtMoney(p.new_amount)} / Recurring: {fmtMoney(p.recurring_amount)}
-                                          {p.refund_amount > 0 && <span className="text-red-400"> / Refund: -{fmtMoney(p.refund_amount)}</span>}
+                                          New: {fmtMoney(p.new_amount)} + Recurring: {fmtMoney(p.recurring_amount)}
+                                          {p.refund_amount > 0 && <span className="text-red-400"> &minus; Refunds: {fmtMoney(p.refund_amount)}</span>}
                                         </div>
                                       )}
                                     </div>

@@ -195,10 +195,21 @@ export async function DELETE(request: NextRequest) {
 
     if (deleteError) throw deleteError;
 
-    // Revert the student's status to active
+    // Determine correct status: check if other churn events remain for this student
+    const { data: remainingEvents } = await supabase
+      .from("churn_events")
+      .select("event_type, event_date")
+      .eq("student_id", existing.student_id)
+      .order("event_date", { ascending: false })
+      .limit(1);
+
+    const newStatus = remainingEvents && remainingEvents.length > 0
+      ? (EVENT_TYPE_TO_STATUS[remainingEvents[0].event_type] ?? "active")
+      : "active";
+
     const { error: updateError } = await supabase
       .from("students")
-      .update({ status: "active", updated_at: new Date().toISOString() })
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
       .eq("id", existing.student_id);
 
     if (updateError) throw updateError;

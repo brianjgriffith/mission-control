@@ -30,18 +30,32 @@ export async function GET(request: NextRequest) {
     const eliteCnt = eliteCount ?? 0;
     const acceleratorCnt = acceleratorCount ?? 0;
 
-    // Monthly churn: count and revenue impact
+    // Monthly churn: count unique students and revenue impact
     const { data: churnData } = await supabase
       .from("churn_events")
-      .select("monthly_revenue_impact")
+      .select("student_id, monthly_revenue_impact")
       .like("event_date", `${month}%`)
       .neq("event_type", "restart");
 
-    const churnCount = churnData?.length ?? 0;
-    const churnRevenue = churnData?.reduce(
-      (sum, e) => sum + (e.monthly_revenue_impact || 0),
-      0
-    ) ?? 0;
+    // Check for restarts this month to exclude students who churned then restarted
+    const { data: restartData } = await supabase
+      .from("churn_events")
+      .select("student_id")
+      .like("event_date", `${month}%`)
+      .eq("event_type", "restart");
+
+    const restartedStudents = new Set((restartData ?? []).map((e) => e.student_id));
+
+    // Deduplicate by student_id and exclude students who also restarted this month
+    const uniqueChurnStudents = new Set(
+      (churnData ?? [])
+        .map((e) => e.student_id)
+        .filter((id) => !restartedStudents.has(id))
+    );
+    const churnCount = uniqueChurnStudents.size;
+    const churnRevenue = (churnData ?? [])
+      .filter((e) => !restartedStudents.has(e.student_id))
+      .reduce((sum, e) => sum + (e.monthly_revenue_impact || 0), 0);
 
     // New students this month
     const { data: newStudents } = await supabase

@@ -56,7 +56,7 @@ Migration files live in `supabase/migrations/` and must be manually applied by B
 | 7 | `007_upsert_samcart_charge.sql` | Adds `upsert_samcart_charge()` RPC for SamCart webhook sync — enriched data with affiliate, subscription, coupon. Auto-attributes to sales rep. | APPLIED | 001 | 2026-03-21 |
 | 8 | `008_add_charges_metadata.sql` | Adds metadata jsonb column to charges table. | APPLIED | 001 | 2026-03-21 |
 | 9 | `009_fix_charges_contact_nullable.sql` | Makes contact_id nullable on charges (some SamCart orders lack email). | APPLIED | 001 | 2026-03-21 |
-| 10 | `010_sales_from_charges.sql` | Adds `get_rep_sales_from_charges()` RPC — computes sales rep performance from charges + attributions in same shape as rep_sales table. | PENDING | 001 | 2026-03-21 |
+| 10 | `010_sales_from_charges.sql` | Adds `get_rep_sales_from_charges()` RPC — computes sales rep performance from charges + attributions in same shape as rep_sales table. | APPLIED | 001 | 2026-03-21 |
 
 **Status values:**
 - `PENDING` — migration file created, waiting for Brian to apply in Supabase
