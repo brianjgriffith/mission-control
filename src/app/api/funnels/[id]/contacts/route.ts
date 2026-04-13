@@ -45,12 +45,12 @@ export async function GET(
       return NextResponse.json({ error: "Funnel not found" }, { status: 404 });
     }
 
-    // Pull contacts from HubSpot list (up to 10,000 — larger lists use cached data)
+    // Pull all contacts from HubSpot list
     const listContacts: Array<{ email: string; addedAt: number; firstName: string; lastName: string }> = [];
     let hasMore = true;
     let vidOffset = 0;
 
-    while (hasMore && listContacts.length < 10000) {
+    while (hasMore) {
       const data = await hubspotGet(
         `https://api.hubapi.com/contacts/v1/lists/${funnel.hubspot_list_id}/contacts/all?count=100&vidOffset=${vidOffset}&property=email&property=firstname&property=lastname`
       );
