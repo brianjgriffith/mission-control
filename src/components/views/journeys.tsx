@@ -136,17 +136,29 @@ export function JourneysView() {
   const [selectedFunnel, setSelectedFunnel] = useState<{ id: string; name: string } | null>(null);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
   const [selectedProductGroup, setSelectedProductGroup] = useState<string | null>(null);
+  const [dailyTracking, setDailyTracking] = useState<Record<string, boolean>>({});
 
   const fetchPerformance = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/funnels/performance");
-      if (!res.ok) {
+      const [perfRes, funnelsRes] = await Promise.all([
+        fetch("/api/funnels/performance"),
+        fetch("/api/funnels"),
+      ]);
+      if (perfRes.ok) {
+        const json = await perfRes.json();
+        setFunnels(json.funnels || []);
+      } else {
         setFunnels([]);
-        return;
       }
-      const json = await res.json();
-      setFunnels(json.funnels || []);
+      if (funnelsRes.ok) {
+        const json = await funnelsRes.json();
+        const tracking: Record<string, boolean> = {};
+        for (const f of json.funnels || []) {
+          tracking[f.id] = f.daily_tracking || false;
+        }
+        setDailyTracking(tracking);
+      }
     } catch (err) {
       console.error("[JourneysView] fetch:", err);
       setFunnels([]);
@@ -154,6 +166,23 @@ export function JourneysView() {
       setLoading(false);
     }
   }, []);
+
+  const toggleDailyTracking = async (funnelId: string) => {
+    const newValue = !dailyTracking[funnelId];
+    setDailyTracking((prev) => ({ ...prev, [funnelId]: newValue }));
+    try {
+      const res = await fetch("/api/funnels", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ funnel_id: funnelId, daily_tracking: newValue }),
+      });
+      if (!res.ok) {
+        setDailyTracking((prev) => ({ ...prev, [funnelId]: !newValue }));
+      }
+    } catch {
+      setDailyTracking((prev) => ({ ...prev, [funnelId]: !newValue }));
+    }
+  };
 
   useEffect(() => {
     fetchPerformance();
@@ -433,13 +462,16 @@ export function JourneysView() {
                       >
                         New Customers <SortIcon col="first_time_buyers" />
                       </th>
+                      <th className="px-3 py-2.5 text-center font-medium">
+                        Daily
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {filtered.length === 0 ? (
                       <tr>
                         <td
-                          colSpan={8}
+                          colSpan={9}
                           className="py-8 text-center text-muted-foreground"
                         >
                           No funnels match your filters
@@ -497,6 +529,30 @@ export function JourneysView() {
                             ) : (
                               <span className="text-muted-foreground">--</span>
                             )}
+                          </td>
+                          <td className="px-3 py-2.5 text-center">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleDailyTracking(f.funnel_id);
+                              }}
+                              className={cn(
+                                "inline-flex h-5 w-9 items-center rounded-full transition-colors",
+                                dailyTracking[f.funnel_id]
+                                  ? "bg-emerald-500/80"
+                                  : "bg-secondary"
+                              )}
+                              title={dailyTracking[f.funnel_id] ? "Disable daily tracking" : "Enable daily tracking"}
+                            >
+                              <span
+                                className={cn(
+                                  "inline-block h-3.5 w-3.5 rounded-full bg-white shadow transition-transform",
+                                  dailyTracking[f.funnel_id]
+                                    ? "translate-x-[18px]"
+                                    : "translate-x-[3px]"
+                                )}
+                              />
+                            </button>
                           </td>
                         </tr>
                       ))

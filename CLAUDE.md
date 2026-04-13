@@ -57,6 +57,7 @@ Migration files live in `supabase/migrations/` and must be manually applied by B
 | 8 | `008_add_charges_metadata.sql` | Adds metadata jsonb column to charges table. | APPLIED | 001 | 2026-03-21 |
 | 9 | `009_fix_charges_contact_nullable.sql` | Makes contact_id nullable on charges (some SamCart orders lack email). | APPLIED | 001 | 2026-03-21 |
 | 10 | `010_sales_from_charges.sql` | Adds `get_rep_sales_from_charges()` RPC — computes sales rep performance from charges + attributions in same shape as rep_sales table. | APPLIED | 001 | 2026-03-21 |
+| 11 | `011_funnel_daily_tracking.sql` | Adds `daily_tracking` boolean to funnels table for marking funnels that should be recomputed daily. | PENDING | 001 | 2026-04-13 |
 
 **Status values:**
 - `PENDING` — migration file created, waiting for Brian to apply in Supabase
