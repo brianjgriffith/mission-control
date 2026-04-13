@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "src/app/api/admin/recompute-funnels/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/funnels/*/contacts/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/admin/sync-contacts/route.ts": {
+      "maxDuration": 300
+    }
+  }
+}
