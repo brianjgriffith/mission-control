@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// Allow up to 5 minutes for large HubSpot list fetches
+export const maxDuration = 300;
+
 const HUBSPOT_API_KEY = process.env.HUBSPOT_API_KEY!;
 const RATE_LIMIT_MS = 120;
 
@@ -22,9 +25,10 @@ async function hubspotGet(url: string): Promise<any> {
 
 // ---------------------------------------------------------------------------
 // POST /api/admin/recompute-funnels
-// Recomputes funnel performance for all active funnels.
+// Recomputes funnel performance for all active funnels (or a single one).
 // Called by n8n weekly workflow or manually.
 // Auth: webhook secret
+// Query: ?funnel_id=<uuid> (optional — recompute only this funnel)
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
@@ -34,13 +38,21 @@ export async function POST(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+  const { searchParams } = new URL(request.url);
+  const singleFunnelId = searchParams.get("funnel_id");
 
   // Load funnels
-  const { data: funnels } = await supabase
+  let funnelQuery = supabase
     .from("funnels")
     .select("id, name, funnel_type, hubspot_list_id")
     .eq("is_active", true)
     .not("hubspot_list_id", "is", null);
+
+  if (singleFunnelId) {
+    funnelQuery = funnelQuery.eq("id", singleFunnelId);
+  }
+
+  const { data: funnels } = await funnelQuery;
 
   if (!funnels || funnels.length === 0) {
     return NextResponse.json({ message: "No funnels to compute", computed: 0 });

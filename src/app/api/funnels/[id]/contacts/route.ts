@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 
+// Allow up to 5 minutes for large HubSpot list fetches
+export const maxDuration = 300;
+
 const HUBSPOT_API_KEY = process.env.HUBSPOT_API_KEY!;
 const RATE_LIMIT_MS = 120;
 
