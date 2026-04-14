@@ -1176,19 +1176,21 @@ export function MeetingsView() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const res = await fetch("/api/admin/sync-meetings?days=30", { method: "POST" });
-      const result = await res.json();
+      const res = await fetch("/api/admin/sync-meetings?days=14", { method: "POST" });
+      const text = await res.text();
+      let result: any;
+      try { result = JSON.parse(text); } catch { result = { error: text }; }
       if (res.ok) {
-        setSyncResult(`Synced: ${result.fetched} found in HubSpot, ${result.with_rep} matched a rep, ${result.upserted} saved, ${result.contacts_created ?? 0} contacts created`);
+        setSyncResult(`Synced: ${result.fetched} found, ${result.with_rep} matched rep, ${result.upserted} saved`);
         fetchMeetings();
         fetchStats();
         fetchLeadQuality();
       } else {
-        setSyncResult(`Error: ${result.error || "Unknown error"}`);
+        setSyncResult(`Error ${res.status}: ${result.error || text.slice(0, 100)}`);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("[MeetingsView] syncNow:", err);
-      setSyncResult("Sync failed — check console");
+      setSyncResult(`Sync failed: ${err?.message || "network error"}`);
     } finally {
       setSyncing(false);
     }
