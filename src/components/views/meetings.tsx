@@ -1176,7 +1176,7 @@ export function MeetingsView() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      const res = await fetch("/api/admin/sync-meetings?days=14", { method: "POST" });
+      const res = await fetch("/api/admin/sync-meetings?days=3", { method: "POST" });
       const text = await res.text();
       let result: any;
       try { result = JSON.parse(text); } catch { result = { error: text }; }
