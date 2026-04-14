@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 // ---------------------------------------------------------------------------
 // POST /api/admin/sync-meetings
@@ -46,10 +47,26 @@ async function hubspotPost(url: string, body: any): Promise<any> {
 
 export async function POST(request: NextRequest) {
   try {
-    // Auth check
+    // Auth: webhook secret (n8n) OR authenticated admin session (in-app)
     const secret = request.headers.get("x-webhook-secret");
-    if (!secret || secret !== process.env.WEBHOOK_SECRET) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const hasWebhookAuth = secret && secret === process.env.WEBHOOK_SECRET;
+
+    if (!hasWebhookAuth) {
+      const userClient = await createClient();
+      const { data: { user } } = await userClient.auth.getUser();
+      if (!user) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      // Check admin role
+      const adminClient = createAdminClient();
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      if (!profile || !["admin", "owner"].includes(profile.role)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
     }
 
     const supabase = createAdminClient();

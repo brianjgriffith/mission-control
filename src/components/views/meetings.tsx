@@ -16,6 +16,7 @@ import {
   ArrowUpDown,
   LayoutList,
   CalendarDays,
+  RefreshCw,
 } from "lucide-react";
 import {
   startOfMonth,
@@ -947,6 +948,7 @@ export function MeetingsView() {
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
   const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
   const [activeRepIds, setActiveRepIds] = useState<Set<string>>(new Set());
+  const [syncing, setSyncing] = useState(false);
 
   // -------------------------------------------------------------------------
   // Fetch stats
@@ -1168,6 +1170,23 @@ export function MeetingsView() {
     });
   }, []);
 
+  const handleSyncNow = useCallback(async () => {
+    setSyncing(true);
+    try {
+      const res = await fetch("/api/admin/sync-meetings?days=1", { method: "POST" });
+      if (res.ok) {
+        // Refresh data after sync
+        fetchMeetings();
+        fetchStats();
+        fetchLeadQuality();
+      }
+    } catch (err) {
+      console.error("[MeetingsView] syncNow:", err);
+    } finally {
+      setSyncing(false);
+    }
+  }, [fetchMeetings, fetchStats, fetchLeadQuality]);
+
   const handleToggleAllReps = useCallback(() => {
     setActiveRepIds((prev) => {
       const allActive = salesReps.every((r) => prev.has(r.id));
@@ -1186,6 +1205,20 @@ export function MeetingsView() {
               Sales meetings with outcome tagging
             </p>
           </div>
+          <div className="flex items-center gap-2">
+          <button
+            onClick={handleSyncNow}
+            disabled={syncing}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-card/20 px-2.5 py-1.5 text-[11px] font-medium transition-colors",
+              syncing
+                ? "text-muted-foreground/50 cursor-not-allowed"
+                : "text-muted-foreground hover:text-foreground hover:bg-card/40"
+            )}
+          >
+            <RefreshCw className={cn("h-3 w-3", syncing && "animate-spin")} />
+            {syncing ? "Syncing..." : "Sync Now"}
+          </button>
           <div className="flex items-center gap-1 rounded-md border border-border/50 bg-card/20 p-0.5">
             <button
               onClick={() => setViewMode("list")}
@@ -1216,6 +1249,7 @@ export function MeetingsView() {
               <CalendarDays className="h-3 w-3" />
               Calendar
             </button>
+          </div>
           </div>
         </div>
 
