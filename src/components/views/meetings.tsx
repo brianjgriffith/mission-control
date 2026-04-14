@@ -1173,8 +1173,10 @@ export function MeetingsView() {
   const handleSyncNow = useCallback(async () => {
     setSyncing(true);
     try {
-      const res = await fetch("/api/admin/sync-meetings?days=1", { method: "POST" });
+      const res = await fetch("/api/admin/sync-meetings?days=7", { method: "POST" });
       if (res.ok) {
+        const result = await res.json();
+        console.log("[MeetingsView] sync result:", result);
         // Refresh data after sync
         fetchMeetings();
         fetchStats();
