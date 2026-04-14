@@ -14,7 +14,18 @@ import {
   ShieldCheck,
   Target,
   ArrowUpDown,
+  LayoutList,
+  CalendarDays,
 } from "lucide-react";
+import {
+  startOfMonth,
+  startOfWeek,
+  addDays,
+  eachDayOfInterval,
+  isSameMonth,
+  isToday,
+  format,
+} from "date-fns";
 import { ContactDetail } from "@/components/contact-detail";
 
 // ---------------------------------------------------------------------------
@@ -28,6 +39,7 @@ interface MeetingContact {
 }
 
 interface MeetingSalesRep {
+  id: string;
   name: string;
 }
 
@@ -197,6 +209,26 @@ const OUTCOME_STYLES: Record<MeetingOutcome, { bg: string; text: string }> = {
 function getOutcomeStyle(outcome: string) {
   return OUTCOME_STYLES[outcome as MeetingOutcome] ?? { bg: "bg-muted", text: "text-muted-foreground" };
 }
+
+// ---------------------------------------------------------------------------
+// Calendar types & constants
+// ---------------------------------------------------------------------------
+
+interface SalesRep {
+  id: string;
+  name: string;
+  email: string;
+  rep_type: string;
+  is_active: boolean;
+}
+
+const REP_COLORS = [
+  "#b4befe", "#89dceb", "#a6e3a1", "#fab387",
+  "#f38ba8", "#cba6f7", "#f9e2af", "#74c7ec",
+];
+
+const CAL_DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MAX_PILLS = 3;
 
 function getOutcomeLabel(outcome: string) {
   const opt = OUTCOME_OPTIONS.find((o) => o.value === outcome);
@@ -469,6 +501,177 @@ function SourceTable({ sources }: { sources: LeadQualitySource[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Rep Filter Chips (for calendar view)
+// ---------------------------------------------------------------------------
+
+function RepFilterChips({
+  reps,
+  repColors,
+  activeRepIds,
+  onToggle,
+  onToggleAll,
+}: {
+  reps: SalesRep[];
+  repColors: Record<string, string>;
+  activeRepIds: Set<string>;
+  onToggle: (repId: string) => void;
+  onToggleAll: () => void;
+}) {
+  const allActive = reps.length > 0 && reps.every((r) => activeRepIds.has(r.id));
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <button
+        onClick={onToggleAll}
+        className={cn(
+          "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium cursor-pointer transition-colors",
+          allActive
+            ? "border-primary/40 bg-primary/15 text-primary"
+            : "border-border/30 bg-card/10 text-muted-foreground/50 hover:text-muted-foreground"
+        )}
+      >
+        All Reps
+      </button>
+      {reps.map((rep) => {
+        const color = repColors[rep.id] ?? "#b4befe";
+        const isActive = activeRepIds.has(rep.id);
+        return (
+          <button
+            key={rep.id}
+            onClick={() => onToggle(rep.id)}
+            className={cn(
+              "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium cursor-pointer transition-colors",
+              isActive
+                ? "border-transparent"
+                : "border-border/30 bg-card/10 text-muted-foreground/40 hover:text-muted-foreground"
+            )}
+            style={
+              isActive
+                ? { backgroundColor: color + "28", color, borderColor: color + "60" }
+                : undefined
+            }
+          >
+            <span
+              className="h-2 w-2 flex-shrink-0 rounded-full"
+              style={{ backgroundColor: color }}
+            />
+            {rep.name}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Meetings Calendar Grid
+// ---------------------------------------------------------------------------
+
+function MeetingsCalendarGrid({
+  meetings,
+  month,
+  repColors,
+  activeRepIds,
+}: {
+  meetings: Meeting[];
+  month: string;
+  repColors: Record<string, string>;
+  activeRepIds: Set<string>;
+}) {
+  const [year, mon] = month.split("-").map(Number);
+  const monthDate = new Date(year, mon - 1, 1);
+  const gridStart = startOfWeek(startOfMonth(monthDate), { weekStartsOn: 0 });
+  const gridDays = eachDayOfInterval({ start: gridStart, end: addDays(gridStart, 41) });
+  const weeks: Date[][] = [];
+  for (let i = 0; i < gridDays.length; i += 7) {
+    weeks.push(gridDays.slice(i, i + 7));
+  }
+
+  // Bucket filtered meetings by date
+  const filteredMeetings = meetings.filter(
+    (m) => activeRepIds.size === 0 || (m.sales_reps && activeRepIds.has(m.sales_reps.id))
+  );
+
+  const byDate: Record<string, Meeting[]> = {};
+  for (const m of filteredMeetings) {
+    const key = m.meeting_date.slice(0, 10);
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(m);
+  }
+
+  return (
+    <div className="rounded-lg border border-border/30 bg-card/20 overflow-hidden">
+      {/* Day headers */}
+      <div className="grid grid-cols-7 border-b border-border/20">
+        {CAL_DAY_HEADERS.map((d) => (
+          <div key={d} className="px-2 py-2 text-center text-[11px] font-medium text-muted-foreground/60">
+            {d}
+          </div>
+        ))}
+      </div>
+      {/* Week rows */}
+      {weeks.map((week, wi) => (
+        <div key={wi} className="grid grid-cols-7 border-b border-border/10 last:border-b-0">
+          {week.map((day, di) => {
+            const inMonth = isSameMonth(day, monthDate);
+            const todayCell = isToday(day);
+            const key = format(day, "yyyy-MM-dd");
+            const cellMeetings = byDate[key] ?? [];
+            const visible = cellMeetings.slice(0, MAX_PILLS);
+            const overflow = cellMeetings.length - visible.length;
+            return (
+              <div
+                key={di}
+                className={cn(
+                  "min-h-[100px] flex flex-col border-r border-border/10 last:border-r-0 p-1",
+                  !inMonth && "opacity-35"
+                )}
+              >
+                <div className="flex justify-end mb-1 px-1 pt-0.5">
+                  <span
+                    className={cn(
+                      "flex h-5 w-5 items-center justify-center rounded-full text-[11px]",
+                      todayCell
+                        ? "bg-primary text-primary-foreground font-semibold"
+                        : "text-muted-foreground/60"
+                    )}
+                  >
+                    {format(day, "d")}
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  {visible.map((m) => {
+                    const repId = m.sales_reps?.id;
+                    const color = repId ? (repColors[repId] ?? "#b4befe") : "#6b7280";
+                    const time = new Date(m.meeting_date).toLocaleTimeString("en-US", {
+                      hour: "numeric", minute: "2-digit", hour12: true,
+                    });
+                    return (
+                      <div
+                        key={m.id}
+                        title={`${m.title || "Meeting"} — ${m.sales_reps?.name ?? "—"} @ ${time}`}
+                        className="rounded px-1.5 py-0.5 text-[10px] leading-tight text-white/90 truncate cursor-default"
+                        style={{ backgroundColor: color + "cc" }}
+                      >
+                        {m.sales_reps?.name ? `${m.sales_reps.name.split(" ")[0]}: ` : ""}{m.contacts?.full_name || m.title || "Meeting"}
+                      </div>
+                    );
+                  })}
+                  {overflow > 0 && (
+                    <span className="px-1 text-[10px] text-muted-foreground/60">
+                      +{overflow} more
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Contact Assigner — inline search to assign a contact to a meeting
 // ---------------------------------------------------------------------------
 
@@ -605,6 +808,9 @@ export function MeetingsView() {
   const [outcomeFilter, setOutcomeFilter] = useState("");
   const [page, setPage] = useState(1);
   const [selectedContactId, setSelectedContactId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
+  const [salesReps, setSalesReps] = useState<SalesRep[]>([]);
+  const [activeRepIds, setActiveRepIds] = useState<Set<string>>(new Set());
 
   // -------------------------------------------------------------------------
   // Fetch stats
@@ -665,7 +871,7 @@ export function MeetingsView() {
       if (repFilter) params.set("rep_name", repFilter);
       if (outcomeFilter) params.set("outcome", outcomeFilter);
       params.set("page", String(page));
-      params.set("per_page", "50");
+      params.set("per_page", viewMode === "calendar" ? "500" : "50");
 
       const res = await fetch(`/api/meetings?${params.toString()}`);
       if (!res.ok) return;
@@ -677,7 +883,27 @@ export function MeetingsView() {
     } finally {
       setLoading(false);
     }
-  }, [month, dateMode, customStart, customEnd, repFilter, outcomeFilter, page]);
+  }, [month, dateMode, customStart, customEnd, repFilter, outcomeFilter, page, viewMode]);
+
+  // -------------------------------------------------------------------------
+  // Fetch sales reps (for calendar rep chips)
+  // -------------------------------------------------------------------------
+  const fetchSalesReps = useCallback(async () => {
+    try {
+      const res = await fetch("/api/sales-reps");
+      if (!res.ok) return;
+      const json = await res.json();
+      const reps: SalesRep[] = json.reps ?? [];
+      setSalesReps(reps);
+      setActiveRepIds(new Set(reps.map((r) => r.id)));
+    } catch (err) {
+      console.error("[MeetingsView] fetchSalesReps:", err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSalesReps();
+  }, [fetchSalesReps]);
 
   useEffect(() => {
     fetchStats();
@@ -786,15 +1012,75 @@ export function MeetingsView() {
     return options;
   }, []);
 
+  // -------------------------------------------------------------------------
+  // Rep colors (deterministic by index)
+  // -------------------------------------------------------------------------
+  const repColors = useMemo<Record<string, string>>(() => {
+    const map: Record<string, string> = {};
+    salesReps.forEach((rep, i) => {
+      map[rep.id] = REP_COLORS[i % REP_COLORS.length];
+    });
+    return map;
+  }, [salesReps]);
+
+  const handleRepToggle = useCallback((repId: string) => {
+    setActiveRepIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(repId)) next.delete(repId);
+      else next.add(repId);
+      return next;
+    });
+  }, []);
+
+  const handleToggleAllReps = useCallback(() => {
+    setActiveRepIds((prev) => {
+      const allActive = salesReps.every((r) => prev.has(r.id));
+      return allActive ? new Set<string>() : new Set(salesReps.map((r) => r.id));
+    });
+  }, [salesReps]);
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-5xl px-6 py-6">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Sales meetings with outcome tagging
-          </p>
+        <div className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold tracking-tight">Meetings</h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sales meetings with outcome tagging
+            </p>
+          </div>
+          <div className="flex items-center gap-1 rounded-md border border-border/50 bg-card/20 p-0.5">
+            <button
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
+                viewMode === "list"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/70"
+              )}
+            >
+              <LayoutList className="h-3 w-3" />
+              List
+            </button>
+            <button
+              onClick={() => {
+                setViewMode("calendar");
+                setDateMode("month");
+                setRepFilter("");
+                setOutcomeFilter("");
+              }}
+              className={cn(
+                "flex items-center gap-1.5 rounded px-2.5 py-1 text-[11px] font-medium transition-colors",
+                viewMode === "calendar"
+                  ? "bg-background text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground/70"
+              )}
+            >
+              <CalendarDays className="h-3 w-3" />
+              Calendar
+            </button>
+          </div>
         </div>
 
         {/* Enhanced Stat Cards */}
@@ -828,45 +1114,45 @@ export function MeetingsView() {
           />
         </div>
 
-        {/* Filters */}
+        {/* Month selector (shared) */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
-          {/* Date mode toggle */}
-          <div className="flex rounded-md border border-border/50 overflow-hidden">
-            <button
-              onClick={() => setDateMode("month")}
-              className={cn(
-                "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                dateMode === "month"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-card/60 text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Month
-            </button>
-            <button
-              onClick={() => {
-                setDateMode("custom");
-                if (!customStart) {
-                  // Default to current month range
-                  const now = new Date();
-                  const y = now.getFullYear();
-                  const m = String(now.getMonth() + 1).padStart(2, "0");
-                  setCustomStart(`${y}-${m}-01`);
-                  setCustomEnd(`${y}-${m}-${String(new Date(y, now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`);
-                }
-              }}
-              className={cn(
-                "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                dateMode === "custom"
-                  ? "bg-primary/20 text-primary"
-                  : "bg-card/60 text-muted-foreground hover:text-foreground"
-              )}
-            >
-              Custom
-            </button>
-          </div>
+          {viewMode === "list" && (
+            <div className="flex rounded-md border border-border/50 overflow-hidden">
+              <button
+                onClick={() => setDateMode("month")}
+                className={cn(
+                  "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  dateMode === "month"
+                    ? "bg-primary/20 text-primary"
+                    : "bg-card/60 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Month
+              </button>
+              <button
+                onClick={() => {
+                  setDateMode("custom");
+                  if (!customStart) {
+                    const now = new Date();
+                    const y = now.getFullYear();
+                    const m = String(now.getMonth() + 1).padStart(2, "0");
+                    setCustomStart(`${y}-${m}-01`);
+                    setCustomEnd(`${y}-${m}-${String(new Date(y, now.getMonth() + 1, 0).getDate()).padStart(2, "0")}`);
+                  }
+                }}
+                className={cn(
+                  "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  dateMode === "custom"
+                    ? "bg-primary/20 text-primary"
+                    : "bg-card/60 text-muted-foreground hover:text-foreground"
+                )}
+              >
+                Custom
+              </button>
+            </div>
+          )}
 
-          {dateMode === "month" ? (
+          {dateMode === "month" || viewMode === "calendar" ? (
             <select
               value={month}
               onChange={(e) => setMonth(e.target.value)}
@@ -894,31 +1180,64 @@ export function MeetingsView() {
             </div>
           )}
 
-          <select
-            value={repFilter}
-            onChange={(e) => setRepFilter(e.target.value)}
-            className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
-          >
-            <option value="">All Reps</option>
-            {repOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+          {viewMode === "list" && (
+            <>
+              <select
+                value={repFilter}
+                onChange={(e) => setRepFilter(e.target.value)}
+                className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
+              >
+                <option value="">All Reps</option>
+                {repOptions.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
 
-          <select
-            value={outcomeFilter}
-            onChange={(e) => setOutcomeFilter(e.target.value)}
-            className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
-          >
-            <option value="">All Outcomes</option>
-            {OUTCOME_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
+              <select
+                value={outcomeFilter}
+                onChange={(e) => setOutcomeFilter(e.target.value)}
+                className="rounded-md border border-border/50 bg-card/60 px-2.5 py-1.5 text-xs text-foreground outline-none focus:ring-1 focus:ring-primary/50"
+              >
+                <option value="">All Outcomes</option>
+                {OUTCOME_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </>
+          )}
         </div>
 
-        {/* Table */}
-        <div className="rounded-lg border border-border/30 bg-card/20">
+        {/* Calendar: rep filter chips */}
+        {viewMode === "calendar" && (
+          <div className="mb-4">
+            <RepFilterChips
+              reps={salesReps}
+              repColors={repColors}
+              activeRepIds={activeRepIds}
+              onToggle={handleRepToggle}
+              onToggleAll={handleToggleAllReps}
+            />
+          </div>
+        )}
+
+        {/* Calendar mode */}
+        {viewMode === "calendar" && (
+          loading ? (
+            <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
+              Loading meetings...
+            </div>
+          ) : (
+            <MeetingsCalendarGrid
+              meetings={meetings}
+              month={month}
+              repColors={repColors}
+              activeRepIds={activeRepIds}
+            />
+          )
+        )}
+
+        {/* Table (list mode) */}
+        {viewMode === "list" && <div className="rounded-lg border border-border/30 bg-card/20">
           {loading ? (
             <div className="flex items-center justify-center py-16 text-sm text-muted-foreground">
               Loading meetings...
@@ -1012,10 +1331,10 @@ export function MeetingsView() {
               </button>
             </div>
           )}
-        </div>
+        </div>}
 
-        {/* Lead Quality Section */}
-        {!lqLoading && leadQuality && (
+        {/* Lead Quality Section (list mode only) */}
+        {viewMode === "list" && !lqLoading && leadQuality && (
           <div className="mt-8 space-y-4">
             <div>
               <h2 className="text-lg font-semibold tracking-tight">Lead Quality</h2>
