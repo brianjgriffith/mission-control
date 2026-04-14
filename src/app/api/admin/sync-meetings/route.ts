@@ -104,20 +104,31 @@ export async function POST(request: NextRequest) {
       offset += 1000;
     }
 
-    // 4. Search HubSpot meetings modified recently
+    // 4. Search HubSpot meetings: recently modified OR starting within window
+    //    Two filter groups = OR logic in HubSpot search API
     let after: string | undefined;
     let totalFetched = 0;
     const toUpsert: any[] = [];
+    const seenIds = new Set<string>();
 
     while (true) {
       const searchBody: any = {
-        filterGroups: [{
-          filters: [{
-            propertyName: "hs_lastmodifieddate",
-            operator: "GTE",
-            value: String(sinceMs),
-          }],
-        }],
+        filterGroups: [
+          {
+            filters: [{
+              propertyName: "hs_lastmodifieddate",
+              operator: "GTE",
+              value: String(sinceMs),
+            }],
+          },
+          {
+            filters: [{
+              propertyName: "hs_meeting_start_time",
+              operator: "GTE",
+              value: String(sinceMs),
+            }],
+          },
+        ],
         properties: [
           "hs_meeting_title", "hs_meeting_start_time", "hs_meeting_end_time",
           "hs_meeting_outcome", "hubspot_owner_id", "hs_meeting_source",
@@ -134,6 +145,9 @@ export async function POST(request: NextRequest) {
       totalFetched += results.length;
 
       for (const mtg of results) {
+        if (seenIds.has(mtg.id)) continue;
+        seenIds.add(mtg.id);
+
         const ownerId = mtg.properties?.hubspot_owner_id;
         const ownerEmail = ownerId ? ownerToEmail.get(ownerId) : null;
         const repId = ownerEmail ? emailToRepId.get(ownerEmail) : null;
