@@ -8,6 +8,9 @@
     },
     "src/app/api/admin/sync-contacts/route.ts": {
       "maxDuration": 300
+    },
+    "src/app/api/admin/sync-meetings/route.ts": {
+      "maxDuration": 300
     }
   }
 }
