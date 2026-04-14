@@ -566,6 +566,121 @@ function RepFilterChips({
 // Meetings Calendar Grid
 // ---------------------------------------------------------------------------
 
+function DayDetailPopup({
+  dateKey,
+  meetings,
+  repColors,
+  onClose,
+}: {
+  dateKey: string;
+  meetings: Meeting[];
+  repColors: Record<string, string>;
+  onClose: () => void;
+}) {
+  const sorted = useMemo(
+    () => [...meetings].sort((a, b) => new Date(a.meeting_date).getTime() - new Date(b.meeting_date).getTime()),
+    [meetings]
+  );
+
+  const dateLabel = new Date(dateKey + "T12:00:00").toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
+      {/* Panel */}
+      <div className="relative z-10 w-full max-w-lg max-h-[80vh] overflow-hidden rounded-lg border border-border/50 bg-background shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-border/20 px-4 py-3">
+          <div>
+            <h3 className="text-sm font-semibold text-foreground">{dateLabel}</h3>
+            <p className="text-[11px] text-muted-foreground">
+              {sorted.length} meeting{sorted.length !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-card/60 transition-colors"
+          >
+            <span className="text-lg leading-none">&times;</span>
+          </button>
+        </div>
+        {/* Meeting list */}
+        <div className="overflow-y-auto max-h-[calc(80vh-60px)] divide-y divide-border/10">
+          {sorted.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
+              No meetings this day
+            </div>
+          ) : (
+            sorted.map((m) => {
+              const repId = m.sales_reps?.id;
+              const color = repId ? (repColors[repId] ?? "#b4befe") : "#6b7280";
+              const time = new Date(m.meeting_date).toLocaleTimeString("en-US", {
+                hour: "numeric",
+                minute: "2-digit",
+                hour12: true,
+              });
+              const style = getOutcomeStyle(m.outcome);
+              return (
+                <div key={m.id} className="flex items-start gap-3 px-4 py-3 hover:bg-card/30 transition-colors">
+                  {/* Time column */}
+                  <div className="w-16 flex-shrink-0 pt-0.5 text-right">
+                    <span className="text-xs font-medium text-foreground">{time}</span>
+                    {m.duration_minutes > 0 && (
+                      <div className="text-[10px] text-muted-foreground/50">{m.duration_minutes}m</div>
+                    )}
+                  </div>
+                  {/* Color bar */}
+                  <div className="w-1 flex-shrink-0 self-stretch rounded-full mt-1" style={{ backgroundColor: color }} />
+                  {/* Details */}
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-medium text-foreground truncate">
+                      {m.title || "Meeting"}
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-2">
+                      {m.sales_reps && (
+                        <span className="text-[11px] font-medium" style={{ color }}>
+                          {m.sales_reps.name}
+                        </span>
+                      )}
+                      {m.contacts && (
+                        <span className="text-[11px] text-muted-foreground">
+                          {m.contacts.full_name}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-1">
+                      <span
+                        className={cn(
+                          "inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          style.bg,
+                          style.text
+                        )}
+                      >
+                        {getOutcomeLabel(m.outcome)}
+                      </span>
+                    </div>
+                    {m.outcome_notes && (
+                      <p className="mt-1 text-[11px] text-muted-foreground/60 truncate">
+                        {m.outcome_notes}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function MeetingsCalendarGrid({
   meetings,
   month,
@@ -577,6 +692,8 @@ function MeetingsCalendarGrid({
   repColors: Record<string, string>;
   activeRepIds: Set<string>;
 }) {
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+
   const [year, mon] = month.split("-").map(Number);
   const monthDate = new Date(year, mon - 1, 1);
   const gridStart = startOfWeek(startOfMonth(monthDate), { weekStartsOn: 0 });
@@ -598,76 +715,95 @@ function MeetingsCalendarGrid({
     byDate[key].push(m);
   }
 
+  // Reset selected day when month changes
+  useEffect(() => {
+    setSelectedDay(null);
+  }, [month]);
+
   return (
-    <div className="rounded-lg border border-border/30 bg-card/20 overflow-hidden">
-      {/* Day headers */}
-      <div className="grid grid-cols-7 border-b border-border/20">
-        {CAL_DAY_HEADERS.map((d) => (
-          <div key={d} className="px-2 py-2 text-center text-[11px] font-medium text-muted-foreground/60">
-            {d}
+    <>
+      <div className="rounded-lg border border-border/30 bg-card/20 overflow-hidden">
+        {/* Day headers */}
+        <div className="grid grid-cols-7 border-b border-border/20">
+          {CAL_DAY_HEADERS.map((d) => (
+            <div key={d} className="px-2 py-2 text-center text-[11px] font-medium text-muted-foreground/60">
+              {d}
+            </div>
+          ))}
+        </div>
+        {/* Week rows */}
+        {weeks.map((week, wi) => (
+          <div key={wi} className="grid grid-cols-7 border-b border-border/10 last:border-b-0">
+            {week.map((day, di) => {
+              const inMonth = isSameMonth(day, monthDate);
+              const todayCell = isToday(day);
+              const key = format(day, "yyyy-MM-dd");
+              const cellMeetings = byDate[key] ?? [];
+              const visible = cellMeetings.slice(0, MAX_PILLS);
+              const overflow = cellMeetings.length - visible.length;
+              return (
+                <div
+                  key={di}
+                  onClick={() => cellMeetings.length > 0 && setSelectedDay(key)}
+                  className={cn(
+                    "min-h-[100px] flex flex-col border-r border-border/10 last:border-r-0 p-1 transition-colors",
+                    !inMonth && "opacity-35",
+                    cellMeetings.length > 0 && "cursor-pointer hover:bg-card/40"
+                  )}
+                >
+                  <div className="flex justify-end mb-1 px-1 pt-0.5">
+                    <span
+                      className={cn(
+                        "flex h-5 w-5 items-center justify-center rounded-full text-[11px]",
+                        todayCell
+                          ? "bg-primary text-primary-foreground font-semibold"
+                          : "text-muted-foreground/60"
+                      )}
+                    >
+                      {format(day, "d")}
+                    </span>
+                  </div>
+                  <div className="flex flex-col gap-0.5">
+                    {visible.map((m) => {
+                      const repId = m.sales_reps?.id;
+                      const color = repId ? (repColors[repId] ?? "#b4befe") : "#6b7280";
+                      const time = new Date(m.meeting_date).toLocaleTimeString("en-US", {
+                        hour: "numeric", minute: "2-digit", hour12: true,
+                      });
+                      return (
+                        <div
+                          key={m.id}
+                          title={`${m.title || "Meeting"} — ${m.sales_reps?.name ?? "—"} @ ${time}`}
+                          className="rounded px-1.5 py-0.5 text-[10px] leading-tight text-white/90 truncate"
+                          style={{ backgroundColor: color + "cc" }}
+                        >
+                          {m.sales_reps?.name ? `${m.sales_reps.name.split(" ")[0]}: ` : ""}{m.contacts?.full_name || m.title || "Meeting"}
+                        </div>
+                      );
+                    })}
+                    {overflow > 0 && (
+                      <span className="px-1 text-[10px] text-muted-foreground/60">
+                        +{overflow} more
+                      </span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         ))}
       </div>
-      {/* Week rows */}
-      {weeks.map((week, wi) => (
-        <div key={wi} className="grid grid-cols-7 border-b border-border/10 last:border-b-0">
-          {week.map((day, di) => {
-            const inMonth = isSameMonth(day, monthDate);
-            const todayCell = isToday(day);
-            const key = format(day, "yyyy-MM-dd");
-            const cellMeetings = byDate[key] ?? [];
-            const visible = cellMeetings.slice(0, MAX_PILLS);
-            const overflow = cellMeetings.length - visible.length;
-            return (
-              <div
-                key={di}
-                className={cn(
-                  "min-h-[100px] flex flex-col border-r border-border/10 last:border-r-0 p-1",
-                  !inMonth && "opacity-35"
-                )}
-              >
-                <div className="flex justify-end mb-1 px-1 pt-0.5">
-                  <span
-                    className={cn(
-                      "flex h-5 w-5 items-center justify-center rounded-full text-[11px]",
-                      todayCell
-                        ? "bg-primary text-primary-foreground font-semibold"
-                        : "text-muted-foreground/60"
-                    )}
-                  >
-                    {format(day, "d")}
-                  </span>
-                </div>
-                <div className="flex flex-col gap-0.5">
-                  {visible.map((m) => {
-                    const repId = m.sales_reps?.id;
-                    const color = repId ? (repColors[repId] ?? "#b4befe") : "#6b7280";
-                    const time = new Date(m.meeting_date).toLocaleTimeString("en-US", {
-                      hour: "numeric", minute: "2-digit", hour12: true,
-                    });
-                    return (
-                      <div
-                        key={m.id}
-                        title={`${m.title || "Meeting"} — ${m.sales_reps?.name ?? "—"} @ ${time}`}
-                        className="rounded px-1.5 py-0.5 text-[10px] leading-tight text-white/90 truncate cursor-default"
-                        style={{ backgroundColor: color + "cc" }}
-                      >
-                        {m.sales_reps?.name ? `${m.sales_reps.name.split(" ")[0]}: ` : ""}{m.contacts?.full_name || m.title || "Meeting"}
-                      </div>
-                    );
-                  })}
-                  {overflow > 0 && (
-                    <span className="px-1 text-[10px] text-muted-foreground/60">
-                      +{overflow} more
-                    </span>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-    </div>
+
+      {/* Day detail popup */}
+      {selectedDay && (
+        <DayDetailPopup
+          dateKey={selectedDay}
+          meetings={byDate[selectedDay] ?? []}
+          repColors={repColors}
+          onClose={() => setSelectedDay(null)}
+        />
+      )}
+    </>
   );
 }
 
