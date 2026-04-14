@@ -1170,20 +1170,25 @@ export function MeetingsView() {
     });
   }, []);
 
+  const [syncResult, setSyncResult] = useState<string | null>(null);
+
   const handleSyncNow = useCallback(async () => {
     setSyncing(true);
+    setSyncResult(null);
     try {
-      const res = await fetch("/api/admin/sync-meetings?days=7", { method: "POST" });
+      const res = await fetch("/api/admin/sync-meetings?days=30", { method: "POST" });
+      const result = await res.json();
       if (res.ok) {
-        const result = await res.json();
-        console.log("[MeetingsView] sync result:", result);
-        // Refresh data after sync
+        setSyncResult(`Synced: ${result.fetched} found in HubSpot, ${result.with_rep} matched a rep, ${result.upserted} saved, ${result.contacts_created ?? 0} contacts created`);
         fetchMeetings();
         fetchStats();
         fetchLeadQuality();
+      } else {
+        setSyncResult(`Error: ${result.error || "Unknown error"}`);
       }
     } catch (err) {
       console.error("[MeetingsView] syncNow:", err);
+      setSyncResult("Sync failed — check console");
     } finally {
       setSyncing(false);
     }
@@ -1221,6 +1226,11 @@ export function MeetingsView() {
             <RefreshCw className={cn("h-3 w-3", syncing && "animate-spin")} />
             {syncing ? "Syncing..." : "Sync Now"}
           </button>
+          {syncResult && (
+            <span className="text-[10px] text-muted-foreground max-w-[300px] truncate" title={syncResult}>
+              {syncResult}
+            </span>
+          )}
           <div className="flex items-center gap-1 rounded-md border border-border/50 bg-card/20 p-0.5">
             <button
               onClick={() => setViewMode("list")}
