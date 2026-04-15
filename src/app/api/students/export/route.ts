@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
       const { data: students, error } = await supabase
         .from("students")
         .select("name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes")
+        .eq("archived", false)
         .order("name", { ascending: true });
 
       if (error) throw error;
@@ -140,6 +141,7 @@ export async function GET(request: NextRequest) {
       const { data: students, error: studentsError } = await supabase
         .from("students")
         .select("name, email, program, coach, status, monthly_revenue, payment_plan, signup_date, renewal_date, youtube_channel, switch_requested_to, switch_requested_date, notes")
+        .eq("archived", false)
         .order("coach", { ascending: true })
         .order("name", { ascending: true });
 
@@ -157,7 +159,8 @@ export async function GET(request: NextRequest) {
       const { data: activeData } = await supabase
         .from("students")
         .select("coach")
-        .eq("status", "active");
+        .eq("status", "active")
+        .eq("archived", false);
 
       const activeMap = new Map<string, number>();
       for (const row of activeData ?? []) {

@@ -51,8 +51,10 @@ import {
 import {
   Users,
   Plus,
-  Trash2,
   Pencil,
+  Trash2,
+  Archive,
+  ArchiveRestore,
   Search,
   TrendingDown,
   TrendingUp,
@@ -421,6 +423,8 @@ function RosterTab() {
   const [filterProgram, setFilterProgram] = useState<StudentProgram | "">("");
   const [filterStatus, setFilterStatus] = useState<StudentStatus | "">("");
   const [filterCoach, setFilterCoach] = useState("");
+  const [showArchived, setShowArchived] = useState(false);
+  const [filterMemberType, setFilterMemberType] = useState<"" | "student" | "partner">("");
 
   // Sort state
   const [sortBy, setSortBy] = useState<SortField>("name");
@@ -456,15 +460,17 @@ function RosterTab() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
 
-  // Confirm delete
-  const [deletingId, setDeletingId] = useState<string | null>(null);
+  // Confirm archive
+  const [archivingId, setArchivingId] = useState<string | null>(null);
 
   // Student detail drawer
   const [drawerStudentId, setDrawerStudentId] = useState<string | null>(null);
 
   const fetchStudents = useCallback(async () => {
     try {
-      const res = await fetch("/api/students");
+      const params = new URLSearchParams();
+      params.set("archived", showArchived ? "true" : "false");
+      const res = await fetch(`/api/students?${params}`);
       if (!res.ok) return;
       const json = await res.json();
       setStudents(json.students ?? []);
@@ -473,9 +479,10 @@ function RosterTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showArchived]);
 
   useEffect(() => {
+    setLoading(true);
     fetchStudents();
   }, [fetchStudents]);
 
@@ -514,6 +521,10 @@ function RosterTab() {
       result = result.filter((s) => s.coach === filterCoach);
     }
 
+    if (filterMemberType) {
+      result = result.filter((s) => s.member_type === filterMemberType);
+    }
+
     // Sort
     const sortFn = (a: Student, b: Student) => {
       let cmp = 0;
@@ -542,7 +553,7 @@ function RosterTab() {
     result.sort(sortFn);
 
     return result;
-  }, [students, searchQuery, filterProgram, filterStatus, filterCoach, sortBy, sortDir]);
+  }, [students, searchQuery, filterProgram, filterStatus, filterCoach, filterMemberType, sortBy, sortDir]);
 
   // Groups for Monday.com-style sections
   const STATUS_GROUPS: { status: StudentStatus; label: string; color: string }[] = [
@@ -562,6 +573,7 @@ function RosterTab() {
   }, [filtered]);
 
   const activeCount = students.filter((s) => s.status === "active").length;
+  const partnerCount = students.filter((s) => s.member_type === "partner").length;
 
   const handleEdit = (student: Student) => {
     setEditingStudent(student);
@@ -573,17 +585,21 @@ function RosterTab() {
     setDialogOpen(true);
   };
 
-  const handleDelete = async (id: string) => {
-    if (deletingId !== id) {
-      setDeletingId(id);
+  const handleArchiveToggle = async (id: string, currentlyArchived: boolean) => {
+    if (!currentlyArchived && archivingId !== id) {
+      setArchivingId(id);
       return;
     }
     try {
-      await fetch(`/api/students/${id}`, { method: "DELETE" });
-      setDeletingId(null);
+      await fetch(`/api/students/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ archived: !currentlyArchived }),
+      });
+      setArchivingId(null);
       fetchStudents();
     } catch (err) {
-      console.error("[RosterTab] delete:", err);
+      console.error("[RosterTab] archive:", err);
     }
   };
 
@@ -601,12 +617,25 @@ function RosterTab() {
           <h2 className="text-sm font-semibold">
             Student Roster
           </h2>
-          <span className="rounded-full bg-[#22c55e]/15 px-2 py-0.5 text-[10px] font-medium text-[#22c55e]">
-            {activeCount} active
-          </span>
-          <span className="text-[10px] text-muted-foreground">
-            {students.length} total
-          </span>
+          {showArchived ? (
+            <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-medium text-amber-400">
+              {students.length} archived
+            </span>
+          ) : (
+            <>
+              <span className="rounded-full bg-[#22c55e]/15 px-2 py-0.5 text-[10px] font-medium text-[#22c55e]">
+                {activeCount} active
+              </span>
+              {partnerCount > 0 && (
+                <span className="rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-medium text-purple-400">
+                  {partnerCount} partners
+                </span>
+              )}
+              <span className="text-[10px] text-muted-foreground">
+                {students.length} total
+              </span>
+            </>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <div className="relative">
@@ -689,13 +718,35 @@ function RosterTab() {
             </option>
           ))}
         </select>
-        {(searchQuery || filterProgram || filterStatus || filterCoach) && (
+        <select
+          value={filterMemberType}
+          onChange={(e) => setFilterMemberType(e.target.value as "" | "student" | "partner")}
+          className="h-8 rounded-md border border-input bg-secondary px-2 text-xs text-foreground"
+        >
+          <option value="">All Types</option>
+          <option value="student">Students</option>
+          <option value="partner">Partners</option>
+        </select>
+        <button
+          onClick={() => setShowArchived(!showArchived)}
+          className={cn(
+            "flex items-center gap-1.5 h-8 rounded-md border px-2.5 text-xs transition-colors",
+            showArchived
+              ? "border-amber-500/50 bg-amber-500/10 text-amber-400"
+              : "border-input bg-secondary text-muted-foreground hover:text-foreground"
+          )}
+        >
+          <Archive className="h-3 w-3" />
+          Archived
+        </button>
+        {(searchQuery || filterProgram || filterStatus || filterCoach || filterMemberType) && (
           <button
             onClick={() => {
               setSearchQuery("");
               setFilterProgram("");
               setFilterStatus("");
               setFilterCoach("");
+              setFilterMemberType("");
             }}
             className="text-[10px] text-muted-foreground hover:text-foreground"
           >
@@ -703,6 +754,16 @@ function RosterTab() {
           </button>
         )}
       </div>
+
+      {/* Archived banner */}
+      {showArchived && (
+        <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 px-4 py-2.5">
+          <Archive className="h-4 w-4 text-amber-400" />
+          <span className="text-xs text-amber-400">
+            Viewing archived students. These are hidden from the active roster and excluded from stats.
+          </span>
+        </div>
+      )}
 
       {/* Student list -- grouped by status */}
       {loading ? (
@@ -779,7 +840,7 @@ function RosterTab() {
                           <tr
                             key={student.id}
                             className="border-b border-border/10 transition-colors hover:bg-card/30 cursor-pointer"
-                            onClick={() => { setDeletingId(null); setDrawerStudentId(student.id); }}
+                            onClick={() => { setArchivingId(null); setDrawerStudentId(student.id); }}
                           >
                             {/* Name & Email */}
                             <td className="px-3 py-2.5">
@@ -816,6 +877,11 @@ function RosterTab() {
                                     )}
                                   </p>
                                 </div>
+                                {student.member_type === "partner" && (
+                                  <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium bg-purple-500/15 text-purple-400">
+                                    Partner
+                                  </span>
+                                )}
                                 {student.switch_requested_to && (
                                   <span
                                     className="inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-medium bg-orange-500/15 text-orange-400"
@@ -912,21 +978,27 @@ function RosterTab() {
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    handleDelete(student.id);
+                                    handleArchiveToggle(student.id, student.archived);
                                   }}
                                   className={cn(
                                     "rounded p-1 transition-colors",
-                                    deletingId === student.id
-                                      ? "text-red-400 hover:text-red-300"
-                                      : "text-muted-foreground/30 hover:text-destructive"
+                                    !student.archived && archivingId === student.id
+                                      ? "text-amber-400 hover:text-amber-300"
+                                      : "text-muted-foreground/30 hover:text-foreground"
                                   )}
                                   title={
-                                    deletingId === student.id
-                                      ? "Click again to confirm"
-                                      : "Delete student"
+                                    student.archived
+                                      ? "Unarchive student"
+                                      : archivingId === student.id
+                                      ? "Click again to confirm archive"
+                                      : "Archive student"
                                   }
                                 >
-                                  <Trash2 className="h-3.5 w-3.5" />
+                                  {student.archived ? (
+                                    <ArchiveRestore className="h-3.5 w-3.5" />
+                                  ) : (
+                                    <Archive className="h-3.5 w-3.5" />
+                                  )}
                                 </button>
                               </div>
                             </td>

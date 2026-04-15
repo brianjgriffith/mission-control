@@ -20,6 +20,7 @@ interface PatchStudentBody {
   notes?: string;
   switch_requested_to?: string;
   switch_requested_date?: string;
+  archived?: boolean;
 }
 
 const ALLOWED_FIELDS = [
@@ -36,6 +37,7 @@ const ALLOWED_FIELDS = [
   "notes",
   "switch_requested_to",
   "switch_requested_date",
+  "archived",
 ] as const;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -123,6 +125,13 @@ export async function PATCH(
         { error: "No valid fields to update" },
         { status: 400 }
       );
+    }
+
+    // Auto-set archived_at when archiving/unarchiving
+    if ("archived" in updateData) {
+      updateData.archived_at = updateData.archived
+        ? new Date().toISOString()
+        : null;
     }
 
     updateData.updated_at = new Date().toISOString();

@@ -14,9 +14,21 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get("status");
     const coach = searchParams.get("coach");
     const search = searchParams.get("search");
+    const archived = searchParams.get("archived");
+    const memberType = searchParams.get("member_type");
 
     let query = supabase.from("students").select("*");
 
+    // Archive filter: default to non-archived, "true" for archived only, "all" for everything
+    if (archived === "true") {
+      query = query.eq("archived", true);
+    } else if (archived !== "all") {
+      query = query.eq("archived", false);
+    }
+
+    if (memberType) {
+      query = query.eq("member_type", memberType);
+    }
     if (program) {
       query = query.eq("program", program);
     }

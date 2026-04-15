@@ -268,6 +268,10 @@ export interface Student {
   notes: string;
   switch_requested_to: string;
   switch_requested_date: string;
+  member_type: "student" | "partner" | "unclassified";
+  linked_student_id: string | null;
+  archived: boolean;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
 }
