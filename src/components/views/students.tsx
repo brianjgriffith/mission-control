@@ -563,16 +563,20 @@ function RosterTab() {
     { status: "cancelled", label: "Cancelled", color: "#ef4444" },
   ];
 
+  // Separate partners from regular students
+  const nonPartners = useMemo(() => filtered.filter((s) => s.member_type !== "partner"), [filtered]);
+  const partners = useMemo(() => filtered.filter((s) => s.member_type === "partner"), [filtered]);
+
   const groupedStudents = useMemo(() => {
     const map: Record<string, Student[]> = {};
     for (const g of STATUS_GROUPS) {
-      map[g.status] = filtered.filter((s) => s.status === g.status);
+      map[g.status] = nonPartners.filter((s) => s.status === g.status);
     }
     return map;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filtered]);
+  }, [nonPartners]);
 
-  const activeCount = students.filter((s) => s.status === "active").length;
+  const activeCount = students.filter((s) => s.status === "active" && s.member_type !== "partner").length;
   const partnerCount = students.filter((s) => s.member_type === "partner").length;
 
   const handleEdit = (student: Student) => {
@@ -1019,6 +1023,146 @@ function RosterTab() {
         </div>
       )}
 
+      {/* Partners Section */}
+      {!loading && partners.length > 0 && !showArchived && (
+        <div className="mt-6 space-y-4">
+          <div className="overflow-hidden rounded-lg border border-border/50">
+            <button
+              onClick={() => toggleGroup("partners")}
+              className="flex w-full items-center gap-3 border-b border-border/30 px-4 py-2.5 transition-colors hover:bg-card/30"
+              style={{ borderLeftWidth: 3, borderLeftColor: "#a855f7" }}
+            >
+              {collapsedGroups.has("partners") ? (
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
+              )}
+              <span className="text-xs font-semibold text-purple-400">
+                Partners
+              </span>
+              <span className="rounded-full px-2 py-0.5 text-[10px] font-medium bg-purple-500/15 text-purple-400">
+                {partners.length}
+              </span>
+              <span className="text-[10px] text-muted-foreground">
+                Accelerator access via a paying student
+              </span>
+            </button>
+
+            {!collapsedGroups.has("partners") && (
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border/20 bg-card/20">
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Partner</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Linked Student</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Coach</th>
+                    <th className="px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Sign-up</th>
+                    <th className="px-3 py-2 text-right text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {partners.map((partner) => {
+                    const linkedStudent = partner.linked_student_id
+                      ? students.find((s) => s.id === partner.linked_student_id)
+                      : null;
+
+                    return (
+                      <tr
+                        key={partner.id}
+                        className="border-b border-border/10 transition-colors hover:bg-card/30 cursor-pointer"
+                        onClick={() => { setArchivingId(null); setDrawerStudentId(partner.id); }}
+                      >
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center gap-2">
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-foreground truncate">{partner.name}</p>
+                              <p className="text-[10px] text-muted-foreground/60 truncate">{partner.email || "--"}</p>
+                            </div>
+                            <span className="inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-medium bg-purple-500/15 text-purple-400">
+                              Partner
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {linkedStudent ? (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setDrawerStudentId(linkedStudent.id);
+                              }}
+                              className="text-xs text-primary hover:underline"
+                            >
+                              {linkedStudent.name}
+                            </button>
+                          ) : (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEdit(partner);
+                              }}
+                              className="text-[10px] text-muted-foreground/50 hover:text-primary"
+                            >
+                              + Link student
+                            </button>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          {partner.coach ? (
+                            <span
+                              className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium"
+                              style={{
+                                backgroundColor: getCoachColor(partner.coach) + "20",
+                                color: getCoachColor(partner.coach),
+                              }}
+                            >
+                              {partner.coach}
+                            </span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">--</span>
+                          )}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs text-muted-foreground">
+                          {partner.signup_date ? formatDate(partner.signup_date) : "--"}
+                        </td>
+                        <td className="px-3 py-2.5">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleEdit(partner); }}
+                              className="rounded p-1 text-muted-foreground/30 transition-colors hover:text-foreground"
+                              title="Edit partner"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleArchiveToggle(partner.id, partner.archived); }}
+                              className={cn(
+                                "rounded transition-colors",
+                                !partner.archived && archivingId === partner.id
+                                  ? "flex items-center gap-1 bg-amber-500/15 px-2 py-1 text-amber-400 hover:text-amber-300"
+                                  : "p-1 text-muted-foreground/30 hover:text-foreground"
+                              )}
+                              title={archivingId === partner.id ? "Click again to confirm" : "Archive partner"}
+                            >
+                              {archivingId === partner.id ? (
+                                <>
+                                  <Archive className="h-3.5 w-3.5" />
+                                  <span className="text-[10px] font-medium">Confirm?</span>
+                                </>
+                              ) : (
+                                <Archive className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Upcoming Renewals */}
       {!loading && <RenewalTracker students={students} />}
 
@@ -1031,6 +1175,7 @@ function RosterTab() {
         }}
         student={editingStudent}
         onSuccess={handleDialogSuccess}
+        allStudents={students}
       />
 
       {/* Student Detail Drawer */}
@@ -1556,9 +1701,10 @@ interface StudentDialogProps {
   onClose: () => void;
   student: Student | null;
   onSuccess: () => void;
+  allStudents?: Student[];
 }
 
-function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps) {
+function StudentDialog({ open, onClose, student, onSuccess, allStudents = [] }: StudentDialogProps) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [youtubeChannel, setYoutubeChannel] = useState("");
@@ -1573,6 +1719,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
   const [switchRequestedTo, setSwitchRequestedTo] = useState("");
   const [switchRequestedDate, setSwitchRequestedDate] = useState("");
   const [memberType, setMemberType] = useState<"student" | "partner" | "unclassified">("student");
+  const [linkedStudentId, setLinkedStudentId] = useState<string>("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -1594,6 +1741,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
       setSwitchRequestedTo(student.switch_requested_to || "");
       setSwitchRequestedDate(student.switch_requested_date || "");
       setMemberType(student.member_type || "student");
+      setLinkedStudentId(student.linked_student_id || "");
     } else {
       setName("");
       setEmail("");
@@ -1609,6 +1757,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
       setSwitchRequestedTo("");
       setSwitchRequestedDate("");
       setMemberType("student");
+      setLinkedStudentId("");
     }
   }, [open, student]);
 
@@ -1634,6 +1783,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
         switch_requested_to: switchRequestedTo.trim(),
         switch_requested_date: switchRequestedDate,
         member_type: memberType,
+        linked_student_id: memberType === "partner" && linkedStudentId ? linkedStudentId : null,
       };
 
       if (student) {
@@ -1780,6 +1930,33 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
               </Select>
             </div>
           </div>
+
+          {/* Linked Student (shown when partner) */}
+          {memberType === "partner" && (
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground">
+                Linked Student
+              </label>
+              <select
+                value={linkedStudentId}
+                onChange={(e) => setLinkedStudentId(e.target.value)}
+                className="h-9 w-full rounded-md border border-input bg-secondary px-2 text-sm text-foreground"
+              >
+                <option value="">Select student...</option>
+                {allStudents
+                  .filter((s) => s.member_type !== "partner" && s.id !== student?.id)
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+              </select>
+              <p className="mt-1 text-[10px] text-muted-foreground">
+                The paying student this partner is linked to
+              </p>
+            </div>
+          )}
 
           {/* Revenue & Signup Date */}
           <div className="grid grid-cols-2 gap-3">

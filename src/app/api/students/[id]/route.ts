@@ -22,6 +22,7 @@ interface PatchStudentBody {
   switch_requested_date?: string;
   archived?: boolean;
   member_type?: string;
+  linked_student_id?: string | null;
 }
 
 const ALLOWED_FIELDS = [
@@ -40,6 +41,7 @@ const ALLOWED_FIELDS = [
   "switch_requested_date",
   "archived",
   "member_type",
+  "linked_student_id",
 ] as const;
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
