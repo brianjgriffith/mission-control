@@ -1057,7 +1057,7 @@ function RosterTab({ programView }: { programView: ProgramView }) {
       )}
 
       {/* Partners Section — only for Accelerator or All view */}
-      {!loading && partners.length > 0 && !showArchived && programView !== "elite" && (
+      {!loading && partners.length > 0 && !showArchived && (
         <div className="mt-6 space-y-4">
           <div className="overflow-hidden rounded-lg border border-border/50">
             <button
