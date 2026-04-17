@@ -268,8 +268,11 @@ function MetricCard({
 // Main Component
 // ---------------------------------------------------------------------------
 
+type ProgramView = "accelerator" | "elite" | "all";
+
 export function StudentsView() {
   const [activeTab, setActiveTab] = useState<StudentTab>("roster");
+  const [programView, setProgramView] = useState<ProgramView>("accelerator");
   const [qualityPanelOpen, setQualityPanelOpen] = useState(false);
   const [qualityCount, setQualityCount] = useState(0);
 
@@ -314,6 +317,33 @@ export function StudentsView() {
           )}
         </div>
 
+        {/* Program Toggle */}
+        <div className="mb-4 flex items-center gap-1 rounded-lg bg-card/30 p-1 w-fit">
+          {(
+            [
+              { id: "accelerator", label: "Accelerator" },
+              { id: "elite", label: "Elite" },
+              { id: "all", label: "All Programs" },
+            ] as const
+          ).map((opt) => {
+            const isActive = programView === opt.id;
+            return (
+              <button
+                key={opt.id}
+                onClick={() => setProgramView(opt.id)}
+                className={cn(
+                  "rounded-md px-4 py-1.5 text-sm font-medium transition-colors",
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground/70"
+                )}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+
         {/* Tabs */}
         <div className="mb-6 flex items-center gap-1 rounded-lg border border-border/50 bg-card/20 p-1">
           {TABS.map((tab) => {
@@ -338,12 +368,12 @@ export function StudentsView() {
         </div>
 
         {/* Tab Content */}
-        {activeTab === "roster" && <RosterTab />}
-        {activeTab === "coaches" && <CoachesTab />}
-        {activeTab === "churn" && <ChurnTab />}
+        {activeTab === "roster" && <RosterTab programView={programView} />}
+        {activeTab === "coaches" && <CoachesTab programView={programView} />}
+        {activeTab === "churn" && <ChurnTab programView={programView} />}
         {activeTab === "attendance" && <AttendanceTab />}
-        {activeTab === "capacity" && <CapacityTab />}
-        {activeTab === "revenue" && <RevenueTab />}
+        {activeTab === "capacity" && <CapacityTab programView={programView} />}
+        {activeTab === "revenue" && <RevenueTab programView={programView} />}
       </div>
 
       {/* Enrollment Data Quality Panel */}
@@ -416,7 +446,7 @@ function SortHeader({
 type SortField = "name" | "program" | "coach" | "monthly_revenue" | "signup_date" | "status";
 type SortDir = "asc" | "desc";
 
-function RosterTab() {
+function RosterTab({ programView }: { programView: ProgramView }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -470,6 +500,7 @@ function RosterTab() {
     try {
       const params = new URLSearchParams();
       params.set("archived", showArchived ? "true" : "false");
+      if (programView !== "all") params.set("program", programView);
       const res = await fetch(`/api/students?${params}`);
       if (!res.ok) return;
       const json = await res.json();
@@ -479,7 +510,7 @@ function RosterTab() {
     } finally {
       setLoading(false);
     }
-  }, [showArchived]);
+  }, [showArchived, programView]);
 
   useEffect(() => {
     setLoading(true);
@@ -690,15 +721,17 @@ function RosterTab() {
             className="h-8 pl-8 text-xs"
           />
         </div>
-        <select
-          value={filterProgram}
-          onChange={(e) => setFilterProgram(e.target.value as StudentProgram | "")}
-          className="h-8 rounded-md border border-input bg-secondary px-2 text-xs text-foreground"
-        >
-          <option value="">All Programs</option>
-          <option value="elite">Elite</option>
-          <option value="accelerator">Accelerator</option>
-        </select>
+        {programView === "all" && (
+          <select
+            value={filterProgram}
+            onChange={(e) => setFilterProgram(e.target.value as StudentProgram | "")}
+            className="h-8 rounded-md border border-input bg-secondary px-2 text-xs text-foreground"
+          >
+            <option value="">All Programs</option>
+            <option value="elite">Elite</option>
+            <option value="accelerator">Accelerator</option>
+          </select>
+        )}
         <select
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value as StudentStatus | "")}
@@ -1023,8 +1056,8 @@ function RosterTab() {
         </div>
       )}
 
-      {/* Partners Section */}
-      {!loading && partners.length > 0 && !showArchived && (
+      {/* Partners Section — only for Accelerator or All view */}
+      {!loading && partners.length > 0 && !showArchived && programView !== "elite" && (
         <div className="mt-6 space-y-4">
           <div className="overflow-hidden rounded-lg border border-border/50">
             <button
@@ -2114,15 +2147,17 @@ interface CoachSummary {
   pausedRevenue: number;
 }
 
-function CoachesTab() {
+function CoachesTab({ programView }: { programView: ProgramView }) {
   const [students, setStudents] = useState<Student[]>([]);
   const [allChurnEvents, setAllChurnEvents] = useState<ChurnEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchStudents = useCallback(async () => {
     try {
+      const params = new URLSearchParams();
+      if (programView !== "all") params.set("program", programView);
       const [stuRes, churnRes] = await Promise.all([
-        fetch("/api/students"),
+        fetch(`/api/students?${params}`),
         fetch("/api/students/churn"),
       ]);
       if (stuRes.ok) {
@@ -2138,7 +2173,7 @@ function CoachesTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [programView]);
 
   useEffect(() => {
     fetchStudents();
@@ -3075,7 +3110,7 @@ function ChurnComparisonChart({ data, title = "3-Month Comparison" }: { data: Mo
 // Churn Types
 // ===========================================================================
 
-function ChurnTab() {
+function ChurnTab({ programView }: { programView: ProgramView }) {
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonth());
   const [churnEvents, setChurnEvents] = useState<ChurnEvent[]>([]);
   const [stats, setStats] = useState<ChurnStats | null>(null);
@@ -3131,7 +3166,9 @@ function ChurnTab() {
 
   const fetchStudents = useCallback(async () => {
     try {
-      const res = await fetch("/api/students");
+      const params = new URLSearchParams();
+      if (programView !== "all") params.set("program", programView);
+      const res = await fetch(`/api/students?${params}`);
       if (!res.ok) return;
       const json = await res.json();
       // Exclude partners — they don't pay and shouldn't affect churn/new student metrics
@@ -3140,7 +3177,7 @@ function ChurnTab() {
     } catch (err) {
       console.error("[ChurnTab] fetch students:", err);
     }
-  }, []);
+  }, [programView]);
 
   useEffect(() => {
     setLoading(true);
@@ -3148,6 +3185,18 @@ function ChurnTab() {
       () => setLoading(false)
     );
   }, [fetchChurnEvents, fetchAllChurnEvents, fetchStats, fetchStudents]);
+
+  // When filtering by program, restrict churn events to students in that program.
+  // We shadow the raw state variables so all downstream code automatically uses filtered data.
+  const studentIds = useMemo(() => new Set(students.map((s) => s.id)), [students]);
+  const programChurnEvents = useMemo(
+    () => programView === "all" ? churnEvents : churnEvents.filter((e) => studentIds.has(e.student_id)),
+    [churnEvents, studentIds, programView]
+  );
+  const programAllChurnEvents = useMemo(
+    () => programView === "all" ? allChurnEvents : allChurnEvents.filter((e) => studentIds.has(e.student_id)),
+    [allChurnEvents, studentIds, programView]
+  );
 
   const handleDeleteChurn = async (id: string) => {
     if (deletingId !== id) {
@@ -3174,12 +3223,12 @@ function ChurnTab() {
 
   // Range-filtered events for all views
   const rangeFilteredEvents = useMemo(() => {
-    if (viewMode === "month") return churnEvents;
-    return allChurnEvents.filter((e) => {
+    if (viewMode === "month") return programChurnEvents;
+    return programAllChurnEvents.filter((e) => {
       const m = e.event_date.slice(0, 7);
       return m >= rangeStart && m <= rangeEnd;
     });
-  }, [viewMode, churnEvents, allChurnEvents, rangeStart, rangeEnd]);
+  }, [viewMode, programChurnEvents, programAllChurnEvents, rangeStart, rangeEnd]);
 
   // Computed stats from events for the current view
   const negativeChurnEvents = rangeFilteredEvents.filter((e) => e.event_type !== "restart");
@@ -3213,7 +3262,7 @@ function ChurnTab() {
   const computeStartOfMonthActive = useCallback((month: string) => {
     const monthStart = `${month}-01`;
     const studentsBeforeMonth = students.filter((s) => s.signup_date < monthStart);
-    const eventsBeforeMonth = allChurnEvents.filter((e) => e.event_date < monthStart);
+    const eventsBeforeMonth = programAllChurnEvents.filter((e) => e.event_date < monthStart);
     const churnedBeforeMonth = new Set<string>();
     for (const e of eventsBeforeMonth) {
       if (e.event_type === "restart") {
@@ -3228,14 +3277,14 @@ function ChurnTab() {
           (s) =>
             s.status !== "active" &&
             s.signup_date < monthStart &&
-            !allChurnEvents.some((e) => e.student_id === s.id)
+            !programAllChurnEvents.some((e) => e.student_id === s.id)
         )
         .map((s) => s.id)
     );
     return studentsBeforeMonth.filter(
       (s) => !churnedBeforeMonth.has(s.id) && !importedInactive.has(s.id)
     ).length;
-  }, [students, allChurnEvents]);
+  }, [students, programAllChurnEvents]);
 
   // Build comparison data: 3 months in month mode, full range in range mode
   const comparisonData = useMemo(() => {
@@ -3258,7 +3307,7 @@ function ChurnTab() {
     }
 
     return months.map((month) => {
-      const monthEvents = allChurnEvents.filter((e) => e.event_date.startsWith(month));
+      const monthEvents = programAllChurnEvents.filter((e) => e.event_date.startsWith(month));
       const cancels = monthEvents.filter((e) => e.event_type === "cancel");
       const pauses = monthEvents.filter((e) => e.event_type === "pause");
       const downgrades = monthEvents.filter((e) => e.event_type === "downgrade");
@@ -3291,7 +3340,7 @@ function ChurnTab() {
         startOfMonthActive,
       };
     });
-  }, [allChurnEvents, students, viewMode, rangeStart, rangeEnd, computeStartOfMonthActive]);
+  }, [programAllChurnEvents, students, viewMode, rangeStart, rangeEnd, computeStartOfMonthActive]);
 
   // Start-of-period active count
   const startOfPeriod = useMemo(() => {
@@ -3790,10 +3839,10 @@ function ChurnTab() {
       {/* ================================================================ */}
       {/* Sprint 2: Average Tenure at Churn                               */}
       {/* ================================================================ */}
-      {!loading && allChurnEvents.length > 0 && (() => {
+      {!loading && programAllChurnEvents.length > 0 && (() => {
         // Compute tenure for each churn event (non-restart)
         const tenures: number[] = [];
-        for (const e of allChurnEvents) {
+        for (const e of programAllChurnEvents) {
           if (e.event_type === "restart") continue;
           const student = students.find((s) => s.id === e.student_id);
           if (!student || !student.signup_date) continue;
@@ -3860,7 +3909,7 @@ function ChurnTab() {
       {/* ================================================================ */}
       {/* Churn by Payment Plan Breakdown                                  */}
       {/* ================================================================ */}
-      {!loading && allChurnEvents.length > 0 && (() => {
+      {!loading && programAllChurnEvents.length > 0 && (() => {
         // Payment plan group definitions
         const planGroups = [
           { key: "Annual", plans: ["annual", "annual_3pay"], color: "#8b5cf6" },
@@ -3888,7 +3937,7 @@ function ChurnTab() {
         const groupTotals: Record<string, number> = { Annual: 0, Quarterly: 0, Monthly: 0, Custom: 0 };
         const stackedData = buckets.map((b) => {
           const row: Record<string, string | number> = { name: b.label, Annual: 0, Quarterly: 0, Monthly: 0, Custom: 0 };
-          for (const e of allChurnEvents) {
+          for (const e of programAllChurnEvents) {
             if (e.event_type === "restart") continue;
             const student = students.find((s) => s.id === e.student_id);
             if (!student || !student.signup_date) continue;
@@ -3948,7 +3997,7 @@ function ChurnTab() {
       {!loading && (() => {
         // Find all students who have at least one pause event
         const pauseStudentIds = new Set(
-          allChurnEvents.filter((e) => e.event_type === "pause").map((e) => e.student_id)
+          programAllChurnEvents.filter((e) => e.event_type === "pause").map((e) => e.student_id)
         );
         if (pauseStudentIds.size === 0) return null;
 
@@ -3958,7 +4007,7 @@ function ChurnTab() {
         const stillPausedStudents: { name: string; pauseDate: string }[] = [];
 
         for (const sid of pauseStudentIds) {
-          const events = allChurnEvents
+          const events = programAllChurnEvents
             .filter((e) => e.student_id === sid)
             .sort((a, b) => a.event_date.localeCompare(b.event_date));
           // Find last pause, then check what happened after
@@ -4086,7 +4135,7 @@ function ChurnTab() {
             let retained = 0;
             for (const s of cohortMembers) {
               // A student is retained if they don't have a net-negative churn event before targetStr
-              const studentChurnEvents = allChurnEvents
+              const studentChurnEvents = programAllChurnEvents
                 .filter((e) => e.student_id === s.id && e.event_date < targetStr)
                 .sort((a, b) => a.event_date.localeCompare(b.event_date));
 
@@ -4254,7 +4303,7 @@ function ChurnTab() {
         const now = new Date();
         const threeMonthsAgo = new Date(now);
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-        const recentNegative = allChurnEvents.filter(
+        const recentNegative = programAllChurnEvents.filter(
           (e) => e.event_date >= threeMonthsAgo.toISOString().slice(0, 10) && e.event_type !== "restart"
         );
         const baseChurnRate = currentCount > 0
@@ -5318,7 +5367,7 @@ interface ScenarioBoost {
   label: string;       // optional event name
 }
 
-function CapacityTab() {
+function CapacityTab({ programView: _programView }: { programView: ProgramView }) {
   const [forecast, setForecast] = useState<CapacityForecast | null>(null);
   const [loading, setLoading] = useState(true);
   const [editingCoach, setEditingCoach] = useState<CoachCapacityDetail | null>(null);
@@ -6265,7 +6314,7 @@ function CoachCapacityCard({
 // Revenue Tab (Sprint 1 + Sprint 3)
 // ===========================================================================
 
-function RevenueTab() {
+function RevenueTab({ programView }: { programView: ProgramView }) {
   const [mrrData, setMrrData] = useState<MrrHistoryResponse | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
   const [allChurnEvents, setAllChurnEvents] = useState<ChurnEvent[]>([]);
@@ -6278,9 +6327,11 @@ function RevenueTab() {
   const [scenarioChurnRate, setScenarioChurnRate] = useState("");
 
   useEffect(() => {
+    const params = new URLSearchParams();
+    if (programView !== "all") params.set("program", programView);
     Promise.all([
       fetch("/api/students/mrr-history").then((r) => r.json()),
-      fetch("/api/students").then((r) => r.json()),
+      fetch(`/api/students?${params}`).then((r) => r.json()),
       fetch("/api/students/churn").then((r) => r.json()),
     ])
       .then(([mrr, stu, churn]) => {
@@ -6290,7 +6341,7 @@ function RevenueTab() {
       })
       .catch((err) => console.error("[RevenueTab] fetch:", err))
       .finally(() => setLoading(false));
-  }, []);
+  }, [programView]);
 
   // -------------------------------------------------------------------------
   // A) MRR Summary Cards
