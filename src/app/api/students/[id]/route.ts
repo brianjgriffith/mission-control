@@ -118,6 +118,8 @@ export async function PATCH(
         const raw = body[field as keyof PatchStudentBody];
         if (field === "name" && typeof raw === "string") {
           updateData[field] = raw.trim();
+        } else if (field === "linked_student_id") {
+          updateData[field] = raw || null;
         } else {
           updateData[field] = raw ?? "";
         }
