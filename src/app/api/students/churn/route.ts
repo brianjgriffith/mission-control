@@ -21,7 +21,10 @@ export async function GET(request: NextRequest) {
       .select("*, students(name)");
 
     if (month) {
-      query = query.like("event_date", `${month}%`);
+      // event_date is a date column — use range filter instead of like
+      const [y, m] = month.split("-").map(Number);
+      const nextMonth = m === 12 ? `${y + 1}-01-01` : `${y}-${String(m + 1).padStart(2, "0")}-01`;
+      query = query.gte("event_date", `${month}-01`).lt("event_date", nextMonth);
     }
     if (eventType) {
       query = query.eq("event_type", eventType);

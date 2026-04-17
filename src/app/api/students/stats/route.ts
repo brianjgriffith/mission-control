@@ -14,6 +14,11 @@ export async function GET(request: NextRequest) {
     const month =
       searchParams.get("month") || new Date().toISOString().slice(0, 7);
 
+    // Compute month range for date filters
+    const [mY, mM] = month.split("-").map(Number);
+    const monthStart = `${month}-01`;
+    const monthEnd = mM === 12 ? `${mY + 1}-01-01` : `${mY}-${String(mM + 1).padStart(2, "0")}-01`;
+
     // Total active students by program (exclude archived and partners)
     const { count: eliteCount } = await supabase
       .from("students")
@@ -38,14 +43,16 @@ export async function GET(request: NextRequest) {
     const { data: churnData } = await supabase
       .from("churn_events")
       .select("student_id, monthly_revenue_impact")
-      .like("event_date", `${month}%`)
+      .gte("event_date", monthStart)
+      .lt("event_date", monthEnd)
       .neq("event_type", "restart");
 
     // Check for restarts this month to exclude students who churned then restarted
     const { data: restartData } = await supabase
       .from("churn_events")
       .select("student_id")
-      .like("event_date", `${month}%`)
+      .gte("event_date", monthStart)
+      .lt("event_date", monthEnd)
       .eq("event_type", "restart");
 
     const restartedStudents = new Set((restartData ?? []).map((e) => e.student_id));
@@ -65,7 +72,8 @@ export async function GET(request: NextRequest) {
     const { data: newStudents } = await supabase
       .from("students")
       .select("monthly_revenue")
-      .like("signup_date", `${month}%`)
+      .gte("signup_date", monthStart)
+      .lt("signup_date", monthEnd)
       .eq("archived", false)
       .or("member_type.is.null,member_type.neq.partner");
 
@@ -87,7 +95,8 @@ export async function GET(request: NextRequest) {
     const { data: sessionsThisMonth } = await supabase
       .from("elite_sessions")
       .select("id")
-      .like("session_date", `${month}%`);
+      .gte("session_date", monthStart)
+      .lt("session_date", monthEnd);
 
     let avgAttendanceRate = 0;
     if (sessionsThisMonth && sessionsThisMonth.length > 0 && eliteCnt > 0) {
