@@ -14,20 +14,22 @@ export async function GET(request: NextRequest) {
     const month =
       searchParams.get("month") || new Date().toISOString().slice(0, 7);
 
-    // Total active students by program (exclude archived)
+    // Total active students by program (exclude archived and partners)
     const { count: eliteCount } = await supabase
       .from("students")
       .select("*", { count: "exact", head: true })
       .eq("program", "elite")
       .eq("status", "active")
-      .eq("archived", false);
+      .eq("archived", false)
+      .neq("member_type", "partner");
 
     const { count: acceleratorCount } = await supabase
       .from("students")
       .select("*", { count: "exact", head: true })
       .eq("program", "accelerator")
       .eq("status", "active")
-      .eq("archived", false);
+      .eq("archived", false)
+      .neq("member_type", "partner");
 
     const eliteCnt = eliteCount ?? 0;
     const acceleratorCnt = acceleratorCount ?? 0;
@@ -59,12 +61,13 @@ export async function GET(request: NextRequest) {
       .filter((e) => !restartedStudents.has(e.student_id))
       .reduce((sum, e) => sum + (e.monthly_revenue_impact || 0), 0);
 
-    // New students this month (exclude archived)
+    // New students this month (exclude archived and partners)
     const { data: newStudents } = await supabase
       .from("students")
       .select("monthly_revenue")
       .like("signup_date", `${month}%`)
-      .eq("archived", false);
+      .eq("archived", false)
+      .neq("member_type", "partner");
 
     const newCount = newStudents?.length ?? 0;
     const newRevenue = newStudents?.reduce(
