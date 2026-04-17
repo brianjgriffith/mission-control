@@ -3136,7 +3136,7 @@ function ChurnTab() {
       const json = await res.json();
       // Exclude partners — they don't pay and shouldn't affect churn/new student metrics
       const all = (json.students ?? []) as Student[];
-      setStudents(all.filter((s) => s.member_type !== "partner"));
+      setStudents(all.filter((s) => !s.member_type || s.member_type !== "partner"));
     } catch (err) {
       console.error("[ChurnTab] fetch students:", err);
     }

@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
       .eq("program", "elite")
       .eq("status", "active")
       .eq("archived", false)
-      .neq("member_type", "partner");
+      .or("member_type.is.null,member_type.neq.partner");
 
     const { count: acceleratorCount } = await supabase
       .from("students")
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       .eq("program", "accelerator")
       .eq("status", "active")
       .eq("archived", false)
-      .neq("member_type", "partner");
+      .or("member_type.is.null,member_type.neq.partner");
 
     const eliteCnt = eliteCount ?? 0;
     const acceleratorCnt = acceleratorCount ?? 0;
@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
       .select("monthly_revenue")
       .like("signup_date", `${month}%`)
       .eq("archived", false)
-      .neq("member_type", "partner");
+      .or("member_type.is.null,member_type.neq.partner");
 
     const newCount = newStudents?.length ?? 0;
     const newRevenue = newStudents?.reduce(
