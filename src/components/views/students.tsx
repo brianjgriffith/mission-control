@@ -1572,6 +1572,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
   const [notes, setNotes] = useState("");
   const [switchRequestedTo, setSwitchRequestedTo] = useState("");
   const [switchRequestedDate, setSwitchRequestedDate] = useState("");
+  const [memberType, setMemberType] = useState<"student" | "partner" | "unclassified">("student");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -1592,6 +1593,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
       setNotes(student.notes);
       setSwitchRequestedTo(student.switch_requested_to || "");
       setSwitchRequestedDate(student.switch_requested_date || "");
+      setMemberType(student.member_type || "student");
     } else {
       setName("");
       setEmail("");
@@ -1606,6 +1608,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
       setNotes("");
       setSwitchRequestedTo("");
       setSwitchRequestedDate("");
+      setMemberType("student");
     }
   }, [open, student]);
 
@@ -1630,6 +1633,7 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
         notes: notes.trim(),
         switch_requested_to: switchRequestedTo.trim(),
         switch_requested_date: switchRequestedDate,
+        member_type: memberType,
       };
 
       if (student) {
@@ -1728,8 +1732,8 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
             </div>
           </div>
 
-          {/* Program & Status */}
-          <div className="grid grid-cols-2 gap-3">
+          {/* Program, Status & Member Type */}
+          <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1.5 block text-xs text-muted-foreground">
                 Program
@@ -1757,6 +1761,21 @@ function StudentDialog({ open, onClose, student, onSuccess }: StudentDialogProps
                   <SelectItem value="cancelled">Cancelled</SelectItem>
                   <SelectItem value="paused">Paused</SelectItem>
                   <SelectItem value="downgraded">Downgraded</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-1.5 block text-xs text-muted-foreground">
+                Member Type
+              </label>
+              <Select value={memberType} onValueChange={(v) => setMemberType(v as "student" | "partner" | "unclassified")}>
+                <SelectTrigger className="w-full text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="student">Student</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
+                  <SelectItem value="unclassified">Unclassified</SelectItem>
                 </SelectContent>
               </Select>
             </div>
