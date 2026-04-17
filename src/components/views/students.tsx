@@ -981,10 +981,10 @@ function RosterTab() {
                                     handleArchiveToggle(student.id, student.archived);
                                   }}
                                   className={cn(
-                                    "rounded p-1 transition-colors",
+                                    "rounded transition-colors",
                                     !student.archived && archivingId === student.id
-                                      ? "text-amber-400 hover:text-amber-300"
-                                      : "text-muted-foreground/30 hover:text-foreground"
+                                      ? "flex items-center gap-1 bg-amber-500/15 px-2 py-1 text-amber-400 hover:text-amber-300"
+                                      : "p-1 text-muted-foreground/30 hover:text-foreground"
                                   )}
                                   title={
                                     student.archived
@@ -996,6 +996,11 @@ function RosterTab() {
                                 >
                                   {student.archived ? (
                                     <ArchiveRestore className="h-3.5 w-3.5" />
+                                  ) : archivingId === student.id ? (
+                                    <>
+                                      <Archive className="h-3.5 w-3.5" />
+                                      <span className="text-[10px] font-medium">Confirm?</span>
+                                    </>
                                   ) : (
                                     <Archive className="h-3.5 w-3.5" />
                                   )}
