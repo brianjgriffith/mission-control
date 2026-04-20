@@ -1,12 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Printer, Link as LinkIcon, ArrowLeft } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Printer, Link as LinkIcon, ArrowLeft, Users } from "lucide-react";
 import Link from "next/link";
 import {
   FunnelBreakdownTable,
   FunnelTrendTable,
+  filterBreakdownByReps,
   useFunnelBreakdown,
+  type MonthBreakdown,
 } from "@/components/funnel-breakdown";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +32,13 @@ function shiftMonth(month: string, delta: number): string {
 // Main
 // ---------------------------------------------------------------------------
 
-export function MeetingsFunnelsReport({ initialMonth }: { initialMonth: string }) {
+export function MeetingsFunnelsReport({
+  initialMonth,
+  initialRepIds,
+}: {
+  initialMonth: string;
+  initialRepIds: string[] | null;
+}) {
   const [month, setMonth] = useState(initialMonth);
 
   // Last 6 months ending with the selected month (for trend)
@@ -42,17 +50,78 @@ export function MeetingsFunnelsReport({ initialMonth }: { initialMonth: string }
 
   // Single-month breakdown query
   const { data: singleData, loading: singleLoading } = useFunnelBreakdown([month]);
-  const breakdown = singleData?.months?.[0];
   const funnelOrder = singleData?.funnel_order ?? [];
 
   // Trend query (6 months)
   const { data: trendData, loading: trendLoading } = useFunnelBreakdown(trendMonths);
 
+  // All reps appearing anywhere in the 6-month window (stable order = most recent first)
+  const allReps = useMemo(() => {
+    const seen = new Set<string>();
+    const order: { id: string; name: string }[] = [];
+    const source = trendData?.months ?? (singleData?.months ?? []);
+    const desc = [...source].sort((a, b) => b.month.localeCompare(a.month));
+    for (const m of desc) {
+      for (const r of m.reps) {
+        if (!seen.has(r.rep_id)) {
+          seen.add(r.rep_id);
+          order.push({ id: r.rep_id, name: r.rep_name });
+        }
+      }
+    }
+    return order;
+  }, [trendData, singleData]);
+
+  // Rep filter state. null = no filter (all reps). Otherwise, a set of visible rep IDs.
+  // Initialized from URL query param, then stays null until the user interacts.
+  const [selectedRepIds, setSelectedRepIds] = useState<Set<string> | null>(
+    initialRepIds ? new Set(initialRepIds) : null
+  );
+
+  // Keep the URL in sync with the rep filter (without triggering a navigation).
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    if (selectedRepIds && selectedRepIds.size > 0) {
+      url.searchParams.set("reps", Array.from(selectedRepIds).join(","));
+    } else {
+      url.searchParams.delete("reps");
+    }
+    url.searchParams.set("month", month);
+    window.history.replaceState(null, "", url.toString());
+  }, [selectedRepIds, month]);
+
+  const toggleRep = useCallback(
+    (repId: string) => {
+      setSelectedRepIds((prev) => {
+        // First interaction — start from "all visible" and remove the clicked one
+        const base = prev ?? new Set(allReps.map((r) => r.id));
+        const next = new Set(base);
+        if (next.has(repId)) next.delete(repId);
+        else next.add(repId);
+        // If the result matches "all visible", collapse back to null (cleaner URL)
+        if (next.size === allReps.length) return null;
+        return next;
+      });
+    },
+    [allReps]
+  );
+
+  const clearFilter = useCallback(() => setSelectedRepIds(null), []);
+
+  // Apply filter
+  const visibleRepIds = selectedRepIds;
+  const breakdownRaw: MonthBreakdown | undefined = singleData?.months?.[0];
+  const breakdown = breakdownRaw ? filterBreakdownByReps(breakdownRaw, visibleRepIds) : undefined;
+  const filteredTrend = trendData
+    ? trendData.months.map((m) => filterBreakdownByReps(m, visibleRepIds))
+    : [];
+
   const [copied, setCopied] = useState(false);
   const copyLink = () => {
     if (typeof window === "undefined") return;
-    const url = `${window.location.origin}/reports/meetings-funnels?month=${month}`;
-    navigator.clipboard.writeText(url).then(() => {
+    // window.location already reflects the latest filter via the effect above
+    navigator.clipboard.writeText(window.location.href).then(() => {
       setCopied(true);
       setTimeout(() => setCopied(false), 1500);
     });
@@ -124,9 +193,54 @@ export function MeetingsFunnelsReport({ initialMonth }: { initialMonth: string }
           </button>
         </div>
 
+        {/* Rep filter chips */}
+        {allReps.length > 0 && (
+          <div className="mb-6 rounded-lg border border-border/30 bg-card/20 px-3 py-2.5 print:hidden">
+            <div className="mb-2 flex items-center gap-1.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+              <Users className="h-3 w-3" />
+              Filter by Rep
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                onClick={clearFilter}
+                className={cn(
+                  "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                  !selectedRepIds
+                    ? "border-primary/40 bg-primary/15 text-primary"
+                    : "border-border/30 bg-card/10 text-muted-foreground/60 hover:text-foreground"
+                )}
+              >
+                All Reps
+              </button>
+              {allReps.map((rep) => {
+                const isActive = !selectedRepIds || selectedRepIds.has(rep.id);
+                return (
+                  <button
+                    key={rep.id}
+                    onClick={() => toggleRep(rep.id)}
+                    className={cn(
+                      "inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-medium transition-colors",
+                      isActive
+                        ? "border-border/60 bg-card/60 text-foreground"
+                        : "border-border/20 bg-card/10 text-muted-foreground/40 hover:text-muted-foreground"
+                    )}
+                  >
+                    {rep.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
         {/* Print-only month caption */}
         <div className="mb-4 hidden text-sm text-muted-foreground print:block">
           Period: <span className="font-medium text-foreground">{formatMonth(month)}</span>
+          {selectedRepIds && (
+            <span className="ml-2">
+              · Filtered to {Array.from(selectedRepIds).length} rep{selectedRepIds.size === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
 
         {/* Summary stat strip */}
@@ -159,7 +273,7 @@ export function MeetingsFunnelsReport({ initialMonth }: { initialMonth: string }
           {trendLoading ? (
             <LoadingPanel />
           ) : trendData ? (
-            <FunnelTrendTable months={trendData.months} />
+            <FunnelTrendTable months={filteredTrend} />
           ) : null}
         </div>
 

@@ -263,6 +263,33 @@ export function FunnelTrendTable({ months }: { months: MonthBreakdown[] }) {
 }
 
 // ---------------------------------------------------------------------------
+// Filter a MonthBreakdown to only the given rep IDs, recomputing totals.
+// Pass null to get the full unfiltered breakdown.
+// ---------------------------------------------------------------------------
+
+export function filterBreakdownByReps(
+  month: MonthBreakdown,
+  repIds: Set<string> | null
+): MonthBreakdown {
+  if (!repIds) return month;
+  const reps = month.reps.filter((r) => repIds.has(r.rep_id));
+  const totals_by_funnel: Record<string, Counts> = {};
+  const grand: Counts = { total: 0, active: 0, canceled: 0 };
+  for (const r of reps) {
+    for (const [funnel, c] of Object.entries(r.funnels)) {
+      if (!totals_by_funnel[funnel]) totals_by_funnel[funnel] = { total: 0, active: 0, canceled: 0 };
+      totals_by_funnel[funnel].total += c.total;
+      totals_by_funnel[funnel].active += c.active;
+      totals_by_funnel[funnel].canceled += c.canceled;
+    }
+    grand.total += r.totals.total;
+    grand.active += r.totals.active;
+    grand.canceled += r.totals.canceled;
+  }
+  return { ...month, reps, totals_by_funnel, grand_totals: grand };
+}
+
+// ---------------------------------------------------------------------------
 // Data hook — fetches one or many months of breakdown data
 // ---------------------------------------------------------------------------
 
