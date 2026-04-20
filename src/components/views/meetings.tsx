@@ -28,6 +28,7 @@ import {
   format,
 } from "date-fns";
 import { ContactDetail } from "@/components/contact-detail";
+import { FunnelBreakdownTable, useFunnelBreakdown } from "@/components/funnel-breakdown";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -923,6 +924,45 @@ function ContactAssigner({
 }
 
 // ---------------------------------------------------------------------------
+// Funnel Breakdown Section — meetings grouped by funnel type × rep
+// ---------------------------------------------------------------------------
+
+function FunnelBreakdownSection({ month }: { month: string }) {
+  const { data, loading } = useFunnelBreakdown([month]);
+  const breakdown = data?.months?.[0];
+  const funnelOrder = data?.funnel_order ?? [];
+
+  return (
+    <div className="mt-8 space-y-4">
+      <div className="flex items-end justify-between flex-wrap gap-2">
+        <div>
+          <h2 className="text-lg font-semibold tracking-tight">Funnel Breakdown</h2>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            Meetings grouped by lead source for {formatMonth(month)}. Internal team meetings excluded.
+          </p>
+        </div>
+        <a
+          href={`/reports/meetings-funnels?month=${month}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border/50 bg-card/20 px-2.5 py-1.5 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:bg-card/40 transition-colors"
+        >
+          Open shareable report →
+        </a>
+      </div>
+
+      {loading ? (
+        <div className="rounded-lg border border-border/30 bg-card/20 py-10 text-center text-sm text-muted-foreground">
+          Loading breakdown...
+        </div>
+      ) : breakdown ? (
+        <FunnelBreakdownTable data={breakdown} funnelOrder={funnelOrder} compact />
+      ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
@@ -1533,6 +1573,11 @@ export function MeetingsView() {
             {/* By Source */}
             <SourceTable sources={leadQuality.by_source} />
           </div>
+        )}
+
+        {/* Funnel Breakdown Section (list mode only) */}
+        {viewMode === "list" && dateMode === "month" && (
+          <FunnelBreakdownSection month={month} />
         )}
       </div>
 
